@@ -32,7 +32,7 @@ export class WorldService {
 	}
 
 	private loadFactions(): Faction[] {
-		if (this._factions) return this._factions;
+		if (this._factions.length > 0) return this._factions;
 		const fp = path.join(this.dataDir, 'factions.json');
 		if (fs.existsSync(fp)) {
 			try {
@@ -40,8 +40,6 @@ export class WorldService {
 			} catch {
 				this._factions = [];
 			}
-		} else {
-			this._factions = [];
 		}
 		return this._factions;
 	}
@@ -56,7 +54,7 @@ export class WorldService {
 	}
 
 	private loadLocations(): Location[] {
-		if (this._locations) return this._locations;
+		if (this._locations.length > 0) return this._locations;
 		const fp = path.join(this.dataDir, 'locations.json');
 		if (fs.existsSync(fp)) {
 			try {
@@ -64,8 +62,6 @@ export class WorldService {
 			} catch {
 				this._locations = [];
 			}
-		} else {
-			this._locations = [];
 		}
 		return this._locations;
 	}
@@ -80,7 +76,7 @@ export class WorldService {
 	}
 
 	private loadEvents(): WorldEvent[] {
-		if (this._events) return this._events;
+		if (this._events.length > 0) return this._events;
 		const fp = path.join(this.dataDir, 'events.json');
 		if (fs.existsSync(fp)) {
 			try {
@@ -88,8 +84,6 @@ export class WorldService {
 			} catch {
 				this._events = [];
 			}
-		} else {
-			this._events = [];
 		}
 		return this._events;
 	}

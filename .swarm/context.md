@@ -40,17 +40,17 @@ Swarm: local
 
 | Tool | Calls | Success | Failed | Avg Duration |
 |------|-------|---------|--------|--------------|
-| read | 217 | 217 | 0 | 42567ms |
-| bash | 127 | 127 | 0 | 4773ms |
-| edit | 102 | 102 | 0 | 2573ms |
-| write | 97 | 97 | 0 | 1012ms |
-| grep | 36 | 36 | 0 | 2196ms |
-| todowrite | 18 | 18 | 0 | 22ms |
-| glob | 17 | 17 | 0 | 1112ms |
+| read | 224 | 224 | 0 | 41241ms |
+| bash | 138 | 138 | 0 | 4730ms |
+| edit | 117 | 117 | 0 | 2455ms |
+| write | 99 | 99 | 0 | 1001ms |
+| grep | 37 | 37 | 0 | 2141ms |
+| glob | 19 | 19 | 0 | 1010ms |
+| todowrite | 19 | 19 | 0 | 21ms |
 | update_task_status | 13 | 13 | 0 | 228ms |
+| save_plan | 7 | 7 | 0 | 216ms |
 | task | 7 | 7 | 0 | 83059ms |
 | search | 7 | 7 | 0 | 127ms |
-| save_plan | 6 | 6 | 0 | 200ms |
 | phase_complete | 6 | 6 | 0 | 17475ms |
 | gitingest | 4 | 4 | 0 | 2867ms |
 | skill | 3 | 3 | 0 | 184ms |
