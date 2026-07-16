@@ -39,7 +39,7 @@ export function createSwarmCommandHandler(directory: string): SwarmCommandHandle
 		const cmd = input.command.toLowerCase();
 
 		if (cmd === 'novel') {
-			const result = await handleNovelCommand(args);
+			const result = await handleNovelCommand(args, directory);
 			output.parts = [{ type: 'text', text: result }];
 			return;
 		}

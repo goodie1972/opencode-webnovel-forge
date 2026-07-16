@@ -11,6 +11,7 @@ import {
 	getAgentPromptMeta,
 	getUserMasterDir,
 } from '../prompts';
+import { NovelProjectManager, WorkflowStateMachine } from '../novel';
 
 const PACKAGE_ROOT = findPackageRoot();
 const PRESETS_DIR = path.join(PACKAGE_ROOT, 'presets');
@@ -143,6 +144,7 @@ function showList(agents: Record<string, any>): string {
 
 export async function handleNovelCommand(
 	_args: string[],
+	directory?: string,
 ): Promise<string> {
 	const rawArgs = [..._args];
 	const subcommand = rawArgs[0]?.toLowerCase();
@@ -159,7 +161,19 @@ export async function handleNovelCommand(
 		return handleMasterCommand(rawArgs.slice(1));
 	}
 
-	return [
+	if (subcommand === 'status') {
+		return handleStatusCommand(rawArgs.slice(1), directory);
+	}
+
+	if (subcommand === 'active') {
+		return handleActiveCommand(rawArgs.slice(1), directory);
+	}
+
+	const dir = directory ?? findPackageRoot();
+	const pm = new NovelProjectManager(dir);
+	const projects = pm.listProjects();
+
+	const lines = [
 		'## /novel 命令',
 		'',
 		'| 命令 | 说明 |',
@@ -167,12 +181,129 @@ export async function handleNovelCommand(
 		'| `/novel model` | 配置 agent LLM 模型 |',
 		'| `/novel prompt` | 查看 agent 系统提示词文件路径 |',
 		'| `/novel master` | 查看/管理大神文风 |',
+		'| `/novel status` | 显示当前项目状态面板 |',
+		'| `/novel active` | 切换活动项目 |',
 		'',
 		'子命令:',
 		'  `/novel model list` | `/novel model init <预设>` | `/novel model set <a> <m>`',
 		'  `/novel prompt list` | `/novel prompt path <agent>`',
 		'  `/novel master list` | `/novel master show <name>`',
-	].join('\n');
+		'  `/novel status` | `/novel active <项目目录名>`',
+	];
+
+	if (projects.length > 0) {
+		lines.push('', '**现有项目:**');
+		for (const p of projects) {
+			const wc = pm.load(p.dirName).chapters.reduce((s, c) => s + c.wordCount, 0);
+			lines.push(`  \`${p.dirName}\` — ${p.meta.title} (${wc}字)`);
+		}
+	}
+
+	return lines.join('\n');
+}
+
+const ACTIVE_PROJECT_FILE = '.novel-active';
+
+function getActiveDir(directory: string): string | null {
+	const activePath = path.join(directory, ACTIVE_PROJECT_FILE);
+	if (fs.existsSync(activePath)) {
+		const name = fs.readFileSync(activePath, 'utf-8').trim();
+		return name || null;
+	}
+	return null;
+}
+
+function setActiveDir(directory: string, dirName: string): void {
+	fs.writeFileSync(path.join(directory, ACTIVE_PROJECT_FILE), dirName, 'utf-8');
+}
+
+async function handleStatusCommand(_args: string[], directory?: string): Promise<string> {
+	const dir = directory ?? findPackageRoot();
+	const pm = new NovelProjectManager(dir);
+	const activeName = getActiveDir(dir);
+
+	const projectName = _args[0] || activeName;
+	if (!projectName) {
+		const projects = pm.listProjects();
+		if (projects.length === 0) return '📭 暂无小说项目。创建项目后使用 `/novel active <项目名>` 激活。';
+		return [
+			'📭 未设置活动项目。可用项目：',
+			...projects.map((p) => `  \`${p.dirName}\` — ${p.meta.title}`),
+			'',
+			'使用 `/novel active <项目名>` 激活，或 `/novel status <项目名>` 查看。',
+		].join('\n');
+	}
+
+	try {
+		const project = pm.load(projectName);
+		const { meta, chapters, settings } = project;
+		const totalWords = chapters.reduce((s, c) => s + c.wordCount, 0);
+		const progress = meta.targetWords > 0 ? Math.round((totalWords / meta.targetWords) * 100) : 0;
+		const finalCount = chapters.filter((c) => c.status === 'final').length;
+		const active = activeName === projectName ? ' ✅ 当前活动' : '';
+
+		const wfPath = path.join(pm.projectsDir, projectName, 'workflow.json');
+		let stageInfo = '';
+		if (fs.existsSync(wfPath)) {
+			try {
+				const raw = JSON.parse(fs.readFileSync(wfPath, 'utf-8'));
+				const wf = WorkflowStateMachine.deserialize(raw);
+				const s = wf.getStatus();
+				stageInfo = `阶段: ${s.label} (${Math.round(s.progress * 100)}%)`;
+			} catch {
+				stageInfo = '阶段: 未设置';
+			}
+		}
+
+		return [
+			`## 📖 ${meta.title}${active}`,
+			`**作者**: ${meta.author} | **类型**: ${meta.genre}`,
+			`**描述**: ${meta.description}`,
+			`**标签**: ${meta.tags.join(', ') || '无'}`,
+			`**语言**: ${settings.language === 'zh' ? '中文' : 'English'}`,
+			`**目标字数**: ${meta.targetWords.toLocaleString()}`,
+			`**当前总字数**: ${totalWords.toLocaleString()} (**${progress}%**)`,
+			`**章节**: ${chapters.length} 章 (${finalCount} 章已完成)`,
+			stageInfo ? `**${stageInfo}**` : '',
+			'',
+			'**章节列表:**',
+			...chapters.map((c) => {
+				const statusIcon = c.status === 'final' ? '✅' : c.status === 'draft' ? '📝' : '🔧';
+				return `  ${statusIcon} 第${c.index}章 ${c.title} (${c.wordCount}字)`;
+			}),
+			'',
+			`项目目录: \`${path.join(pm.projectsDir, projectName)}\``,
+		].filter(Boolean).join('\n');
+	} catch (e) {
+		return `❌ 加载项目失败: ${e instanceof Error ? e.message : String(e)}`;
+	}
+}
+
+async function handleActiveCommand(args: string[], directory?: string): Promise<string> {
+	const dir = directory ?? findPackageRoot();
+	const pm = new NovelProjectManager(dir);
+
+	if (args.length === 0) {
+		const active = getActiveDir(dir);
+		if (active) {
+			try {
+				const p = pm.load(active);
+				return `当前活动项目: **${p.meta.title}** (\`${active}\`)`;
+			} catch {
+				return `当前活动项目: \`${active}\` (但项目已不存在)`;
+			}
+		}
+		return '未设置活动项目。使用 `/novel active <项目目录名>` 设置。';
+	}
+
+	const dirName = args[0];
+	try {
+		const p = pm.load(dirName);
+		setActiveDir(dir, dirName);
+		return `✅ 已切换活动项目为 **${p.meta.title}** (\`${dirName}\`)`;
+	} catch {
+		return `❌ 项目 \`${dirName}\` 不存在。可用: ${pm.listProjects().map((x) => `\`${x.dirName}\``).join(', ')}`;
+	}
 }
 
 // ─── Model subcommand ──────────────────────────────────────────

@@ -8,6 +8,7 @@ import {
 	createSystemEnhancerHook,
 	createContextBudgetHook,
 	createCompactionCustomizerHook,
+	createNovelStatusHook,
 	safeHook,
 	composeHandlers,
 } from './hooks';
@@ -80,6 +81,7 @@ export const WriterSwarmPlugin: Plugin = async ({ client, project, directory }) 
 	const commandHandler = createSwarmCommandHandler(directory);
 	const guardrailsHook = createGuardrailsHook(config.guardrails ?? getGuardrailsDefaults());
 	const compactionHook = createCompactionCustomizerHook(config, directory);
+	const novelStatusHook = createNovelStatusHook(directory);
 
 	const startupMessage = formatStartupLog(agentCount, safeConfigKeys, directory);
 	console.log(startupMessage);
@@ -108,6 +110,11 @@ export const WriterSwarmPlugin: Plugin = async ({ client, project, directory }) 
 	if ((contextBudgetHook as any)['experimental.chat.system.transform']) {
 		transformHandlers.push(
 			(contextBudgetHook as any)['experimental.chat.system.transform'],
+		);
+	}
+	if ((novelStatusHook as any)['experimental.chat.system.transform']) {
+		transformHandlers.push(
+			(novelStatusHook as any)['experimental.chat.system.transform'],
 		);
 	}
 	const systemTransform = composeHandlers(...transformHandlers);

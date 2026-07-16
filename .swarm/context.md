@@ -40,20 +40,21 @@ Swarm: local
 
 | Tool | Calls | Success | Failed | Avg Duration |
 |------|-------|---------|--------|--------------|
-| read | 198 | 198 | 0 | 46634ms |
-| bash | 115 | 115 | 0 | 4867ms |
-| edit | 83 | 83 | 0 | 2824ms |
-| write | 80 | 80 | 0 | 697ms |
+| read | 217 | 217 | 0 | 42567ms |
+| bash | 127 | 127 | 0 | 4773ms |
+| edit | 102 | 102 | 0 | 2573ms |
+| write | 97 | 97 | 0 | 1012ms |
 | grep | 36 | 36 | 0 | 2196ms |
+| todowrite | 18 | 18 | 0 | 22ms |
 | glob | 17 | 17 | 0 | 1112ms |
-| todowrite | 13 | 13 | 0 | 18ms |
-| update_task_status | 8 | 8 | 0 | 261ms |
+| update_task_status | 13 | 13 | 0 | 228ms |
 | task | 7 | 7 | 0 | 83059ms |
 | search | 7 | 7 | 0 | 127ms |
 | save_plan | 6 | 6 | 0 | 200ms |
 | phase_complete | 6 | 6 | 0 | 17475ms |
 | gitingest | 4 | 4 | 0 | 2867ms |
 | skill | 3 | 3 | 0 | 184ms |
+| check_gate_status | 3 | 3 | 0 | 27ms |
 | swarm_command | 3 | 3 | 0 | 80ms |
 | retrieve_summary | 3 | 3 | 0 | 44ms |
 | question | 2 | 2 | 0 | 109368ms |
@@ -63,10 +64,10 @@ Swarm: local
 | invalid | 1 | 1 | 0 | 2ms |
 | spec_write | 1 | 1 | 0 | 45ms |
 | declare_scope | 1 | 1 | 0 | 8ms |
-| check_gate_status | 1 | 1 | 0 | 32ms |
 | summarize_work | 1 | 1 | 0 | 76ms |
 | write_retro | 1 | 1 | 0 | 20ms |
 | write_drift_evidence | 1 | 1 | 0 | 141ms |
 | checkpoint | 1 | 1 | 0 | 573ms |
 | fetch_get_markdown | 1 | 1 | 0 | 272ms |
 | web_fetch | 1 | 1 | 0 | 12ms |
+| batch_symbols | 1 | 1 | 0 | 55ms |
