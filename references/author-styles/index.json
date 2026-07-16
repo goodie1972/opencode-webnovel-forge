@@ -1,0 +1,160 @@
+{
+  "修仙/玄幻": [
+    {
+      "name": "辰东流",
+      "description": "辰东式宏大世界观与热血战斗风格",
+      "prompt": "世界格局宏大，力量体系层次分明。主角意志坚定、百折不挠。战斗描写注重气势和压迫感，修炼突破有仪式感。伏笔深远，后期回收震撼。语言磅礴有力，对白简洁但有力。",
+      "features": {
+        "narration_ratio": 0.75,
+        "avg_sentence_length": 35,
+        "paragraph_length": 120,
+        "description_density": 0.12,
+        "dialogue_style": "medium",
+        "pov_type": "third"
+      },
+      "forbidden": ["过于现代的对话口吻", "感情线过多影响主线节奏", "角色智商掉线"],
+      "references": ["遮天", "完美世界", "长生界"]
+    },
+    {
+      "name": "唐家三少流",
+      "description": "唐家三少式热血成长与团队冒险风格",
+      "prompt": "主角天赋异禀但经历磨难成长。重视伙伴关系和团队作战。感情线纯爱专一。等级体系清晰，每次升级都有明确的能力展示。战斗描写有层次感，从试探到爆发。语言流畅易读，节奏明快。",
+      "features": {
+        "narration_ratio": 0.7,
+        "avg_sentence_length": 28,
+        "paragraph_length": 100,
+        "description_density": 0.1,
+        "dialogue_style": "medium",
+        "pov_type": "third"
+      },
+      "forbidden": ["黑暗沉重的情节", "主角道德模糊", "悲剧结局", "复杂多角感情线"],
+      "references": ["斗罗大陆", "绝世唐门", "神印王座"]
+    },
+    {
+      "name": "我吃西红柿流",
+      "description": "我吃西红柿式快节奏爽文风格",
+      "prompt": "节奏极快，不拖泥带水。开篇迅速建立世界观和冲突。主角目标明确、行动力强。修炼体系清晰简洁。战斗描写直截了当，以力量碾压为主。重视地图切换和场景升级。语言简洁明快，少有冗余描写。",
+      "features": {
+        "narration_ratio": 0.72,
+        "avg_sentence_length": 25,
+        "paragraph_length": 90,
+        "description_density": 0.08,
+        "dialogue_style": "short",
+        "pov_type": "third"
+      },
+      "forbidden": ["冗长的心理描写", "过度铺垫", "节奏拖沓的战斗", "复杂的感情纠葛"],
+      "references": ["盘龙", "星辰变", "吞噬星空"]
+    },
+    {
+      "name": "忘语流",
+      "description": "忘语式凡人修仙流风格",
+      "prompt": "主角起点低微，靠智慧和毅力步步为营。修炼体系严谨，每一步突破都有逻辑支撑。战斗重视策略和手段，而非纯粹的力量对拼。修仙世界残酷现实，不乏尔虞我诈。配角智商在线，没有降智反派。语言平实但细节丰富。",
+      "features": {
+        "narration_ratio": 0.78,
+        "avg_sentence_length": 32,
+        "paragraph_length": 110,
+        "description_density": 0.11,
+        "dialogue_style": "medium",
+        "pov_type": "third"
+      },
+      "forbidden": ["主角运气逆天", "不合理的大机缘", "配角落智", "感情线喧宾夺主"],
+      "references": ["凡人修仙传", "玄界之门", "魔天记"]
+    }
+  ],
+  "都市/现代": [
+    {
+      "name": "老鹰吃小鸡流",
+      "description": "老鹰吃小鸡式都市异能战斗风格",
+      "prompt": "都市背景下融合异能或武道。战斗描写细腻有打击感。势力斗争层次分明。主角性格鲜明，有血性有底线。情节设计注重悬念和反转。语言行云流水，节奏控制精准。",
+      "features": {
+        "narration_ratio": 0.7,
+        "avg_sentence_length": 30,
+        "paragraph_length": 100,
+        "description_density": 0.1,
+        "dialogue_style": "medium",
+        "pov_type": "third"
+      },
+      "forbidden": ["过度YY", "女性角色物化", "无逻辑的战斗力膨胀"],
+      "references": ["万古神帝", "星门", "全球高武"]
+    },
+    {
+      "name": "柳下挥流",
+      "description": "柳下挥式都市暧昧爽文风格",
+      "prompt": "都市背景，主角能力强但低调。美女环绕但不过分。对话幽默风趣，吐槽犀利。情感互动自然有趣。情节轻松为主，带适度紧张。语言风趣幽默，段子自然不刻意。",
+      "features": {
+        "narration_ratio": 0.55,
+        "avg_sentence_length": 25,
+        "paragraph_length": 85,
+        "description_density": 0.09,
+        "dialogue_style": "long",
+        "pov_type": "third"
+      },
+      "forbidden": ["强行开车", "女性角色工具化", "过度暧昧", "油腻对话"],
+      "references": ["邻家有女初长成", "天才相师", "逆鳞"]
+    }
+  ],
+  "悬疑/推理": [
+    {
+      "name": "紫金陈流",
+      "description": "紫金陈式社会派悬疑推理风格",
+      "prompt": "关注社会现实和人性的黑暗面。案件设计合情合理，线索公正。不以炫技为目的，注重人物命运和情感冲击。文风冷峻克制，不煽情。结局往往引人深思。",
+      "features": {
+        "narration_ratio": 0.8,
+        "avg_sentence_length": 28,
+        "paragraph_length": 95,
+        "description_density": 0.1,
+        "dialogue_style": "short",
+        "pov_type": "third"
+      },
+      "forbidden": ["超自然解释", "机械降神", "线索不公平", "为了反转而反转"],
+      "references": ["坏小孩", "长夜难明", "无证之罪"]
+    },
+    {
+      "name": "周浩晖流",
+      "description": "周浩晖式高智商悬疑推理风格",
+      "prompt": "高智商对决，罪犯和侦探都极其聪明。案件结构精妙，多重反转。节奏紧凑，悬念层层递进。注重逻辑严谨和细节真实。读者能跟着推导但猜不到全部真相。",
+      "features": {
+        "narration_ratio": 0.75,
+        "avg_sentence_length": 30,
+        "paragraph_length": 100,
+        "description_density": 0.11,
+        "dialogue_style": "medium",
+        "pov_type": "third"
+      },
+      "forbidden": ["粗糙的作案手法", "明显的逻辑漏洞", "虎头蛇尾", "凶手动机牵强"],
+      "references": ["死亡通知单", "暗黑者", "邪恶催眠师"]
+    }
+  ],
+  "历史/架空": [
+    {
+      "name": "月关流",
+      "description": "月关式历史穿越权谋风格",
+      "prompt": "历史考据扎实，穿越者合理利用现代知识改变历史。权谋斗争层层递进，每一计都有铺垫和后果。人物塑造立体，配角有独立的行为逻辑。感情线自然融入主线。文白夹杂，有古典韵味。",
+      "features": {
+        "narration_ratio": 0.72,
+        "avg_sentence_length": 35,
+        "paragraph_length": 115,
+        "description_density": 0.13,
+        "dialogue_style": "long",
+        "pov_type": "third"
+      },
+      "forbidden": ["金手指开太大", "历史人物降智", "现代价值观强加于古代背景", "考据硬伤"],
+      "references": ["回到明朝当王爷", "步步生莲", "锦衣夜行"]
+    },
+    {
+      "name": "猫腻流",
+      "description": "猫腻式文青历史架空风格",
+      "prompt": "文笔极佳，语言精致有诗意。人物塑造深刻，每个角色都有灵魂。情节设计精巧，伏笔绵密。思想性强，在故事中探讨人性和社会议题。感情线凄美动人。节奏偏慢但每一句都值得细品。",
+      "features": {
+        "narration_ratio": 0.8,
+        "avg_sentence_length": 40,
+        "paragraph_length": 120,
+        "description_density": 0.15,
+        "dialogue_style": "long",
+        "pov_type": "third"
+      },
+      "forbidden": ["套路化情节", "快餐式写法", "语言粗糙随意", "角色扁平"],
+      "references": ["庆余年", "间客", "将夜"]
+    }
+  ]
+}

@@ -1,28 +1,33 @@
 import type { AgentConfig as SDKAgentConfig } from '@opencode-ai/sdk';
-import {
-	DEFAULT_MODELS,
-	type PluginConfig,
-	loadPrompt,
-} from '../config';
+import { type PluginConfig } from '../config';
+import { loadAgentPrompt } from '../prompts';
 import type { AgentDefinition } from './types';
 import { AGENT_TEMPLATES } from './definitions';
 
 export type { AgentDefinition } from './types';
 
-/** Resolve model: config override → default constant. */
+/**
+ * Resolution chain (highest to lowest):
+ *   1. config.agents.<name>.model/temperature  (user override)
+ *   2. AGENT_TEMPLATES.<name>.defaultModel/defaultTemperature (code fallback)
+ */
+
 function getModelForAgent(
 	agentName: string,
+	templateDefault: string,
 	config?: PluginConfig,
 ): string {
-	// 1. Check explicit override
-	const explicit = config?.agents?.[agentName]?.model;
-	if (explicit) return explicit;
-
-	// 2. Default from constants
-	return DEFAULT_MODELS[agentName] ?? DEFAULT_MODELS.default;
+	return config?.agents?.[agentName]?.model ?? templateDefault;
 }
 
-/** Check if agent is disabled via config. */
+function getTemperatureForAgent(
+	agentName: string,
+	templateDefault: number,
+	config?: PluginConfig,
+): number {
+	return config?.agents?.[agentName]?.temperature ?? templateDefault;
+}
+
 function isAgentDisabled(
 	agentName: string,
 	config?: PluginConfig,
@@ -30,40 +35,15 @@ function isAgentDisabled(
 	return config?.agents?.[agentName]?.disabled === true;
 }
 
-/** Get temperature override from config, if any. */
-function getTemperatureOverride(
-	agentName: string,
-	config?: PluginConfig,
-): number | undefined {
-	return config?.agents?.[agentName]?.temperature;
-}
-
-/** Apply temperature override to agent definition. */
-function applyOverrides(
-	agent: AgentDefinition,
-	config?: PluginConfig,
-): AgentDefinition {
-	const tempOverride = getTemperatureOverride(agent.name, config);
-	if (tempOverride !== undefined) {
-		return {
-			...agent,
-			config: { ...agent.config, temperature: tempOverride },
-		};
-	}
-	return agent;
-}
-
 /**
- * Create all agent definitions with configuration applied
+ * Create all agent definitions with configuration applied.
+ * Resolution: config.agents.<name> → template default.
  */
 export function createAgents(config?: PluginConfig): AgentDefinition[] {
 	const agents: AgentDefinition[] = [];
 
-	// Helper to get model
-	const getModel = (name: string) => getModelForAgent(name, config);
-
-  // Helper to load prompt
-  const getPrompt = (name: string) => loadPrompt(name.replaceAll('_', '-'));
+	const getPrompt = (name: string) =>
+		loadAgentPrompt(name);
 
 	for (const template of AGENT_TEMPLATES) {
 		if (!isAgentDisabled(template.name, config)) {
@@ -71,12 +51,16 @@ export function createAgents(config?: PluginConfig): AgentDefinition[] {
 				name: template.name,
 				description: template.description,
 				config: {
-					model: getModel(template.name),
-					temperature: template.defaultTemperature,
+					model: getModelForAgent(template.name, template.defaultModel, config),
+					temperature: getTemperatureForAgent(
+						template.name,
+						template.defaultTemperature,
+						config,
+					),
 					prompt: getPrompt(template.name),
 				},
 			};
-			agents.push(applyOverrides(agent, config));
+			agents.push(agent);
 		}
 	}
 
@@ -98,7 +82,6 @@ export function getAgentConfigs(
 				description: agent.description,
 			};
 
-			// Apply mode based on agent type
 			if (agent.name === 'editor_in_chief') {
 				sdkConfig.mode = 'primary';
 			} else {

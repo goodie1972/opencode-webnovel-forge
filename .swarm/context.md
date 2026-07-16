@@ -23,20 +23,50 @@ Swarm: local
 ## Patterns
 - [pattern]: Agent factory pattern used in `src/agents/*.ts`
 
+## Pending QA Gate Selection
+- reviewer: true
+- test_engineer: true
+- sme_enabled: false
+- critic_pre_plan: false
+- sast_enabled: false
+- council_mode: false
+- hallucination_guard: false
+- mutation_test: false
+- phase_council: false
+- drift_check: true
+- final_council: false
+
 ## Agent Activity
 
 | Tool | Calls | Success | Failed | Avg Duration |
 |------|-------|---------|--------|--------------|
-| read | 77 | 77 | 0 | 8ms |
-| bash | 59 | 59 | 0 | 1068ms |
-| edit | 41 | 41 | 0 | 1291ms |
-| task | 14 | 14 | 0 | 71568ms |
-| todowrite | 13 | 13 | 0 | 2ms |
-| memory_set | 5 | 5 | 0 | 1191ms |
-| write | 4 | 4 | 0 | 1688ms |
-| memory_replace | 2 | 2 | 0 | 3ms |
-| memory_list | 2 | 2 | 0 | 3ms |
-| apply_patch | 2 | 2 | 0 | 33ms |
-| glob | 1 | 1 | 0 | 48ms |
-| mystatus | 1 | 1 | 0 | 1828ms |
-| grep | 1 | 1 | 0 | 2039ms |
+| read | 198 | 198 | 0 | 46634ms |
+| bash | 115 | 115 | 0 | 4867ms |
+| edit | 83 | 83 | 0 | 2824ms |
+| write | 80 | 80 | 0 | 697ms |
+| grep | 36 | 36 | 0 | 2196ms |
+| glob | 17 | 17 | 0 | 1112ms |
+| todowrite | 13 | 13 | 0 | 18ms |
+| update_task_status | 8 | 8 | 0 | 261ms |
+| task | 7 | 7 | 0 | 83059ms |
+| search | 7 | 7 | 0 | 127ms |
+| save_plan | 6 | 6 | 0 | 200ms |
+| phase_complete | 6 | 6 | 0 | 17475ms |
+| gitingest | 4 | 4 | 0 | 2867ms |
+| skill | 3 | 3 | 0 | 184ms |
+| swarm_command | 3 | 3 | 0 | 80ms |
+| retrieve_summary | 3 | 3 | 0 | 44ms |
+| question | 2 | 2 | 0 | 109368ms |
+| set_qa_gates | 2 | 2 | 0 | 72ms |
+| dispatch_lanes | 2 | 2 | 0 | 84064ms |
+| sequential-thinking_sequentialthinking | 2 | 2 | 0 | 59ms |
+| invalid | 1 | 1 | 0 | 2ms |
+| spec_write | 1 | 1 | 0 | 45ms |
+| declare_scope | 1 | 1 | 0 | 8ms |
+| check_gate_status | 1 | 1 | 0 | 32ms |
+| summarize_work | 1 | 1 | 0 | 76ms |
+| write_retro | 1 | 1 | 0 | 20ms |
+| write_drift_evidence | 1 | 1 | 0 | 141ms |
+| checkpoint | 1 | 1 | 0 | 573ms |
+| fetch_get_markdown | 1 | 1 | 0 | 272ms |
+| web_fetch | 1 | 1 | 0 | 12ms |

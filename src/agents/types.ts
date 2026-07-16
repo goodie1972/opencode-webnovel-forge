@@ -9,5 +9,6 @@ export interface AgentDefinition {
 export interface AgentTemplate {
 	name: string;
 	description: string;
+	defaultModel: string;
 	defaultTemperature: number;
 }

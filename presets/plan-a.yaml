@@ -1,0 +1,51 @@
+# ============================================================
+# Plan A — 国际付费模型 (原始设定)
+# 使用方法: 复制此文件到 .opencode/opencode-webnovel-forge.yaml
+#           然后编辑 agent 的 model/temperature
+# ============================================================
+language: zh
+qa_retry_limit: 3
+
+agents:
+  editor_in_chief:
+    model: anthropic/claude-sonnet-4-5
+    temperature: 0.1
+  research_market:
+    model: google/gemini-2.0-flash
+    temperature: 0.2
+  research_deep:
+    model: anthropic/claude-sonnet-4-5
+    temperature: 0.2
+  writer_a:
+    model: anthropic/claude-sonnet-4-5
+    temperature: 0.2
+  writer_b:
+    model: anthropic/claude-sonnet-4-5
+    temperature: 0.5
+  writer_c:
+    model: anthropic/claude-sonnet-4-5
+    temperature: 0.8
+  world_builder:
+    model: openai/gpt-4o
+    temperature: 0.3
+  character_designer:
+    model: openai/gpt-4o
+    temperature: 0.4
+  plot_architect:
+    model: anthropic/claude-sonnet-4-5
+    temperature: 0.3
+  shuang_analyzer:
+    model: google/gemini-2.0-flash
+    temperature: 0.2
+  pacing_reviewer:
+    model: google/gemini-2.0-flash
+    temperature: 0.2
+  genre_checker:
+    model: openai/gpt-4o
+    temperature: 0.1
+  reader_simulator:
+    model: anthropic/claude-sonnet-4-5
+    temperature: 0.4
+  copy_editor:
+    model: anthropic/claude-sonnet-4-5
+    temperature: 0.1

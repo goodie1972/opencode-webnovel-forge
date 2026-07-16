@@ -29,14 +29,14 @@ export function createSystemEnhancerHook(
 						const currentPhase = extractCurrentPhase(planContent);
 						if (currentPhase) {
 							output.system.push(
-								`[WRITER SWARM CONTEXT] Current phase: ${currentPhase}`,
+								`[WEBNOVEL FORGE CONTEXT] Current phase: ${currentPhase}`,
 							);
 						}
 
 						const incompleteTasks = extractIncompleteTasks(planContent);
 						if (incompleteTasks) {
 							output.system.push(
-								`[WRITER SWARM CONTEXT] Pending phases:\n${incompleteTasks}`,
+								`[WEBNOVEL FORGE CONTEXT] Pending phases:\n${incompleteTasks}`,
 							);
 						}
 					}
@@ -44,7 +44,7 @@ export function createSystemEnhancerHook(
 					if (contextContent) {
 						const decisions = extractDecisions(contextContent, 500);
 						if (decisions) {
-							output.system.push(`[WRITER SWARM CONTEXT] Key decisions:\n${decisions}`);
+							output.system.push(`[WEBNOVEL FORGE CONTEXT] Key decisions:\n${decisions}`);
 						}
 					}
 				} catch (error) {

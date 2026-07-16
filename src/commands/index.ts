@@ -1,8 +1,9 @@
 import { handleDiagnoseCommand } from './diagnose';
 import { handleExportCommand } from './export';
 import { handleResetCommand } from './reset';
+import { handleNovelCommand } from './novel';
 
-const HELP_TEXT = `Available /swarm commands:
+const SWARM_HELP = `Available /swarm commands:
 
   /swarm diagnose  - Run diagnostics on the swarm configuration and state
   /swarm export    - Export swarm data and evidence
@@ -10,6 +11,8 @@ const HELP_TEXT = `Available /swarm commands:
 
 Use --confirm flag with reset to proceed:
   /swarm reset --confirm`;
+
+const NOVEL_HELP = '`/novel model` — 查看/配置 agent LLM 模型';
 
 export interface CommandInput {
 	command: string;
@@ -33,7 +36,15 @@ export function createSwarmCommandHandler(directory: string): SwarmCommandHandle
 	return async (input: CommandInput, output: CommandOutput): Promise<void> => {
 		const args = input.args ?? [];
 		const subcommand = args[0]?.toLowerCase();
+		const cmd = input.command.toLowerCase();
 
+		if (cmd === 'novel') {
+			const result = await handleNovelCommand(args);
+			output.parts = [{ type: 'text', text: result }];
+			return;
+		}
+
+		// Legacy /swarm commands
 		switch (subcommand) {
 			case 'diagnose': {
 				const result = await handleDiagnoseCommand(directory, args.slice(1));
@@ -51,10 +62,10 @@ export function createSwarmCommandHandler(directory: string): SwarmCommandHandle
 				break;
 			}
 			default: {
-				output.parts = [{ type: 'text', text: HELP_TEXT }];
+				output.parts = [{ type: 'text', text: SWARM_HELP }];
 			}
 		}
 	};
 }
 
-export { handleDiagnoseCommand, handleExportCommand, handleResetCommand };
+export { handleDiagnoseCommand, handleExportCommand, handleResetCommand, handleNovelCommand };

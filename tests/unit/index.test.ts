@@ -1,11 +1,10 @@
 import { describe, expect, test, beforeEach, afterEach } from 'bun:test';
 import type { AgentConfig as SDKAgentConfig } from '@opencode-ai/sdk';
-import { 
+import {
 	loadPluginConfig,
-	loadPrompt,
 	loadReference,
-	DEFAULT_MODELS,
 } from '../../src/config';
+import { loadAgentPrompt } from '../../src/prompts';
 import { createAgents } from '../../src/agents';
 import {
 	ensureAgentMap,
@@ -30,8 +29,10 @@ describe('Config Loading', () => {
 	});
 
 	test('should load prompts correctly', () => {
-		const prompt = loadPrompt('editor-in-chief');
-		expect(prompt).toContain('You are the editor-in-chief');
+		const prompt = loadAgentPrompt('editor_in_chief');
+		expect(prompt).toBeDefined();
+		expect(prompt.length).toBeGreaterThan(0);
+		expect(prompt).toContain('你是总编');
 	});
 
 	test('should load references correctly', () => {
@@ -41,31 +42,38 @@ describe('Config Loading', () => {
 });
 
 describe('Agent Creation', () => {
-	test('should create all 7 agents by default', () => {
+	test('should create all 14 agents by default', () => {
 		const agents = createAgents();
-		expect(agents.length).toBe(7);
+		expect(agents.length).toBe(14);
 
 		const names = agents.map((agent) => agent.name);
 		expect(names).toContain('editor_in_chief');
-		expect(names).toContain('writer');
-		expect(names).toContain('researcher');
-		expect(names).toContain('section_editor');
+		expect(names).toContain('research_market');
+		expect(names).toContain('research_deep');
+		expect(names).toContain('writer_a');
+		expect(names).toContain('writer_b');
+		expect(names).toContain('writer_c');
+		expect(names).toContain('world_builder');
+		expect(names).toContain('character_designer');
+		expect(names).toContain('plot_architect');
+		expect(names).toContain('shuang_analyzer');
+		expect(names).toContain('pacing_reviewer');
+		expect(names).toContain('genre_checker');
+		expect(names).toContain('reader_simulator');
 		expect(names).toContain('copy_editor');
-		expect(names).toContain('fact_checker');
-		expect(names).toContain('reader_advocate');
 	});
 
 	test('should respect model overrides', () => {
 		const config = {
 			agents: {
-				writer: {
+				writer_a: {
 					model: 'custom/model',
 				},
 			},
 		};
 
 		const agents = createAgents(config);
-		const writer = agents.find((a) => a.name === 'writer');
+		const writer = agents.find((a) => a.name === 'writer_a');
 		expect(writer?.config.model).toBe('custom/model');
 	});
 });
@@ -138,7 +146,7 @@ describe('WriterSwarmPlugin', () => {
 			directory: process.cwd(),
 		});
 
-		expect(plugin.name).toBe('opencode-writer-swarm');
+		expect(plugin.name).toBe('opencode-webnovel-forge');
 		expect(plugin.agent).toBeDefined();
 		expect(plugin.tool?.read_writer_file).toBeDefined();
 
@@ -175,7 +183,7 @@ describe('system enhancer hook', () => {
 
 		const output = { system: [] };
 		await transformer({}, output as any);
-		expect(output.system.some((entry) => entry.includes('[WRITER SWARM CONTEXT]'))).toBe(true);
+		expect(output.system.some((entry) => entry.includes('[WEBNOVEL FORGE CONTEXT]'))).toBe(true);
 	});
 });
 
@@ -185,14 +193,14 @@ describe('logger utilities', () => {
 	const originalError = console.error;
 
 	beforeEach(() => {
-		process.env.OPENCODE_WRITER_SWARM_DEBUG = '1';
+		process.env.OPENCODE_WEBNOVEL_FORGE_DEBUG = '1';
 		console.log = () => {};
 		console.warn = () => {};
 		console.error = () => {};
 	});
 
 	afterEach(() => {
-		process.env.OPENCODE_WRITER_SWARM_DEBUG = undefined;
+		process.env.OPENCODE_WEBNOVEL_FORGE_DEBUG = undefined;
 		console.log = originalLog;
 		console.warn = originalWarn;
 		console.error = originalError;
@@ -202,7 +210,7 @@ describe('logger utilities', () => {
 		let captured = false;
 		console.log = (message) => {
 			captured = true;
-			expect((message as string)).toContain('opencode-writer-swarm');
+			expect((message as string)).toContain('opencode-webnovel-forge');
 		};
 		log('hi', {});
 		expect(captured).toBe(true);
@@ -228,3 +236,4 @@ describe('logger utilities', () => {
 		expect(captured).toBe(true);
 	});
 });
+

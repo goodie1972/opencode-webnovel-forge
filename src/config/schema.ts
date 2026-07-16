@@ -98,6 +98,11 @@ export const PluginConfigSchema = z.object({
 
 	// Config validation security settings
 	config_validation_enabled: z.boolean().default(true),
+
+	// Agent dialogue language (zh = Chinese, en = English)
+	language: z.enum(['zh', 'en']).default('zh'),
+
+
 });
 
 export type PluginConfig = z.infer<typeof PluginConfigSchema>;

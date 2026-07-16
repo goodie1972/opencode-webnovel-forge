@@ -2,6 +2,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import * as yaml from 'js-yaml';
 import {
 	type PluginConfig,
 	PluginConfigSchema,
@@ -23,21 +24,28 @@ const __moduleDir = path.dirname(__filename);
  */
 function resolvePackageRoot(): string {
 	let dir = __moduleDir;
-	// Walk up at most 3 levels to find the directory containing prompts/
-	for (let i = 0; i < 3; i++) {
-		if (fs.existsSync(path.join(dir, 'prompts'))) {
+	// Walk up to find the directory containing prompts/agents/ (exclusive marker)
+	for (let i = 0; i < 5; i++) {
+		if (fs.existsSync(path.join(dir, 'prompts', 'agents'))) {
 			return dir;
 		}
 		const parent = path.dirname(dir);
-		if (parent === dir) break; // reached filesystem root
+		if (parent === dir) break;
 		dir = parent;
 	}
-	// Fallback: assume source layout (2 levels up from src/config/)
+	// Fallback: check for references/ (another project-root marker)
+	dir = __moduleDir;
+	for (let i = 0; i < 5; i++) {
+		if (fs.existsSync(path.join(dir, 'references'))) return dir;
+		const parent = path.dirname(dir);
+		if (parent === dir) break;
+		dir = parent;
+	}
+	// Last fallback: 2 levels up from src/config/
 	return path.join(__moduleDir, '..', '..');
 }
 
 const PACKAGE_ROOT = resolvePackageRoot();
-const CONFIG_FILENAME = 'opencode-writer-swarm.json';
 
 export const MAX_CONFIG_FILE_BYTES = 102_400;
 
@@ -51,6 +59,7 @@ function createDefaultPluginConfig(): PluginConfig {
 		file_retry_enabled: true,
 		max_file_operation_retries: 3,
 		config_validation_enabled: true,
+		language: 'zh',
 		context_budget: getContextBudgetDefaults(),
 		evidence: getEvidenceDefaults(),
 		guardrails: getGuardrailsDefaults(),
@@ -90,10 +99,28 @@ function getUserConfigDir(): string {
 	return process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config');
 }
 
-/** Load and validate config JSON from path, returning null on any failure. */
+/** Parse raw string content as JSON or YAML, returning object or null. */
+function parseConfigContent(content: string, filePath: string): Record<string, unknown> | null {
+	const ext = path.extname(filePath).toLowerCase();
+	try {
+		if (ext === '.yaml' || ext === '.yml') {
+			const doc = yaml.load(content);
+			if (typeof doc !== 'object' || doc === null || Array.isArray(doc)) {
+				warn('Config file must contain a top-level object', { path: filePath });
+				return null;
+			}
+			return doc as Record<string, unknown>;
+		}
+		return JSON.parse(content);
+	} catch (error) {
+		logConfigLoadError(filePath, error);
+		return null;
+	}
+}
+
+/** Load and validate config from path (JSON or YAML), returning null on any failure. */
 function loadConfigFromPath(configPath: string): PluginConfig | null {
 	try {
-		// Check file size before reading
 		if (!fs.existsSync(configPath)) return null;
 
 		const stats = fs.statSync(configPath);
@@ -106,9 +133,10 @@ function loadConfigFromPath(configPath: string): PluginConfig | null {
 		}
 
 		const content = fs.readFileSync(configPath, 'utf-8');
-		const rawConfig = JSON.parse(content);
-		const result = PluginConfigSchema.safeParse(rawConfig);
+		const rawConfig = parseConfigContent(content, configPath);
+		if (!rawConfig) return null;
 
+		const result = PluginConfigSchema.safeParse(rawConfig);
 		if (!result.success) {
 			warn('Invalid config document', {
 				path: configPath,
@@ -122,6 +150,14 @@ function loadConfigFromPath(configPath: string): PluginConfig | null {
 		logConfigLoadError(configPath, error);
 		return null;
 	}
+}
+
+/** Return the first existing config path from a list of candidates (JSON → YAML). */
+function resolveConfigPath(...candidates: string[]): string | null {
+	for (const p of candidates) {
+		if (fs.existsSync(p)) return p;
+	}
+	return null;
 }
 
 /**
@@ -179,25 +215,36 @@ export function deepMerge<T>(
 }
 
 /**
+ * Resolve config file paths (JSON + YAML alternatives).
+ */
+function resolveConfigPaths(directory: string): { user: string[]; project: string[] } {
+	const extless = 'opencode-webnovel-forge';
+	const userDir = path.join(getUserConfigDir(), 'opencode');
+	const projectDir = path.join(directory, '.opencode');
+
+	return {
+		user: [path.join(userDir, `${extless}.json`), path.join(userDir, `${extless}.yaml`), path.join(userDir, `${extless}.yml`)],
+		project: [path.join(projectDir, `${extless}.json`), path.join(projectDir, `${extless}.yaml`), path.join(projectDir, `${extless}.yml`)],
+	};
+}
+
+/**
  * Load plugin configuration from user and project config files.
  *
- * Config locations:
- * 1. User config: ~/.config/opencode/opencode-writer-swarm.json
- * 2. Project config: <directory>/.opencode/opencode-writer-swarm.json
+ * Config locations (tried in order):
+ * 1. User config: ~/.config/opencode/opencode-webnovel-forge.{json,yaml,yml}
+ * 2. Project config: <directory>/.opencode/opencode-webnovel-forge.{json,yaml,yml}
  *
  * Project config takes precedence.
  */
 export function loadPluginConfig(directory: string): PluginConfig {
-	const userConfigPath = path.join(
-		getUserConfigDir(),
-		'opencode',
-		CONFIG_FILENAME,
-	);
+	const paths = resolveConfigPaths(directory);
 
-	const projectConfigPath = path.join(directory, '.opencode', CONFIG_FILENAME);
+	const userConfigPath = resolveConfigPath(...paths.user);
+	const projectConfigPath = resolveConfigPath(...paths.project);
 
-	const userConfig = loadConfigFromPath(userConfigPath);
-	const projectConfig = loadConfigFromPath(projectConfigPath);
+	const userConfig = userConfigPath ? loadConfigFromPath(userConfigPath) : null;
+	const projectConfig = projectConfigPath ? loadConfigFromPath(projectConfigPath) : null;
 
 	let config: PluginConfig;
 
@@ -250,21 +297,33 @@ export function loadPluginConfig(directory: string): PluginConfig {
 }
 
 /**
- * Load prompt file from prompts/ directory
+ * Load prompt file from prompts/ directory.
+ * Supports language subdirectories: prompts/zh/, prompts/en/
+ * Falls back to prompts/ root if language dir not found.
  */
-export function loadPrompt(name: string): string {
-	const promptPath = path.join(PACKAGE_ROOT, 'prompts', `${name}.md`);
-	try {
-		return fs.readFileSync(promptPath, 'utf-8');
-	} catch (error) {
-		warn('Error reading prompt file', { name, path: promptPath, error });
-		// Try with underscore instead of hyphen for backward compatibility
-		const altPath = path.join(PACKAGE_ROOT, 'prompts', `${name.replace(/-/g, '_')}.md`);
+export function loadPrompt(name: string, language: string = 'zh'): string {
+	// Try language-specific directory first
+	const langPaths: string[] = [];
+	if (language !== 'zh') {
+		langPaths.push(path.join(PACKAGE_ROOT, 'prompts', language, `${name}.md`));
+	}
+	// Then try root prompts/ directory
+	langPaths.push(path.join(PACKAGE_ROOT, 'prompts', `${name}.md`));
+
+	for (const promptPath of langPaths) {
 		try {
-			return fs.readFileSync(altPath, 'utf-8');
+			return fs.readFileSync(promptPath, 'utf-8');
 		} catch {
-			return '';
+			continue;
 		}
+	}
+
+	// Last resort: try underscore variant
+	const altPath = path.join(PACKAGE_ROOT, 'prompts', `${name.replace(/-/g, '_')}.md`);
+	try {
+		return fs.readFileSync(altPath, 'utf-8');
+	} catch {
+		return '';
 	}
 }
 

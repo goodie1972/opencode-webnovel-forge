@@ -690,6 +690,67 @@ describe('Phase 2.1 Config Schema Defaults', () => {
 	});
 });
 
+describe('YAML Config Parsing', () => {
+	it('should parse YAML agent config via PluginConfigSchema', () => {
+		const yamlContent = {
+			language: 'zh',
+			agents: {
+				editor_in_chief: {
+					model: 'anthropic/claude-sonnet-4-5',
+					temperature: 0.1,
+				},
+				writer_a: {
+					model: 'openai/gpt-4o',
+					temperature: 0.3,
+				},
+			},
+		};
+		const result = PluginConfigSchema.parse(yamlContent);
+		expect(result.language).toBe('zh');
+		expect(result.agents?.editor_in_chief?.model).toBe('anthropic/claude-sonnet-4-5');
+		expect(result.agents?.writer_a?.temperature).toBe(0.3);
+	});
+
+	it('should handle agent disabled in YAML config', () => {
+		const yamlContent = {
+			agents: {
+				research_market: {
+					model: 'google/gemini-2.0-flash',
+					disabled: true,
+				},
+			},
+		};
+		const result = PluginConfigSchema.parse(yamlContent);
+		expect(result.agents?.research_market?.disabled).toBe(true);
+	});
+
+	it('should apply YAML config over template defaults', () => {
+		const yamlContent = {
+			agents: {
+				writer_b: {
+					model: 'custom/model',
+					temperature: 0.7,
+				},
+			},
+		};
+		const result = PluginConfigSchema.parse(yamlContent);
+		expect(result.agents?.writer_b?.model).toBe('custom/model');
+		expect(result.agents?.writer_b?.temperature).toBe(0.7);
+	});
+
+	it('should reject invalid YAML config values', () => {
+		const invalid = {
+			agents: {
+				writer_a: {
+					temperature: 5, // out of 0-2 range
+				},
+			},
+		};
+		const result = PluginConfigSchema.safeParse(invalid);
+		expect(result.success).toBe(false);
+	});
+});
+
 describe('Phase 2.1 Deep Merge Configuration Sections', () => {
 	describe('context_budget deep merge', () => {
 		it('should merge context_budget with defaults', () => {

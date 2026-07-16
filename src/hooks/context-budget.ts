@@ -75,7 +75,7 @@ export function createContextBudgetHook(
 		const systemTokens = (Array.isArray(output.system) ? output.system : []).reduce(
 			(total, entry) => {
 				if (typeof entry !== 'string') return total;
-				if (entry.includes('[WRITER SWARM CONTEXT] CONTEXT')) return total;
+				if (entry.includes('[WEBNOVEL FORGE CONTEXT] CONTEXT')) return total;
 				return total + estimateTokens(entry);
 			},
 			0,
@@ -109,7 +109,7 @@ export function createContextBudgetHook(
 			level === 'CRITICAL'
 				? 'Archive completed phases and summarize decisions before adding new content.'
 				: 'Focus on the current phase/task and latest decisions before adding more context.';
-		const message = `[WRITER SWARM CONTEXT] CONTEXT ${level}: ${percent}% of the ${maxTokens}-token budget estimated (${totalTokens} tokens). ${suggestions}`;
+		const message = `[WEBNOVEL FORGE CONTEXT] CONTEXT ${level}: ${percent}% of the ${maxTokens}-token budget estimated (${totalTokens} tokens). ${suggestions}`;
 		const injectionLimit = budget.max_injection_tokens ?? 4000;
 		if (estimateTokens(message) > injectionLimit) {
 			log('Context budget warning skipped: injection limit exceeded', {
@@ -127,12 +127,12 @@ export function createContextBudgetHook(
 		if (level === 'CRITICAL') {
 			output.system = (output.system as string[]).filter((entry) => {
 				if (typeof entry !== 'string') return true;
-				return !entry.includes('[WRITER SWARM CONTEXT] CONTEXT WARNING:');
+				return !entry.includes('[WEBNOVEL FORGE CONTEXT] CONTEXT WARNING:');
 			});
 		}
 		if (
 			(output.system as string[]).some(
-				(entry) => typeof entry === 'string' && entry.includes(`[WRITER SWARM CONTEXT] CONTEXT ${level}:`),
+				(entry) => typeof entry === 'string' && entry.includes(`[WEBNOVEL FORGE CONTEXT] CONTEXT ${level}:`),
 			)
 		) {
 			log('Context budget warning skipped: duplicate level already present', { level });

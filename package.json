@@ -1,54 +1,57 @@
 {
-"name": "opencode-writer-swarm",
-  "version": "1.2.2",
- "description": "Editorial swarm plugin for OpenCode - professional writing workflow with editor-in-chief, writers, and reviewers",
- "main": "dist/index.js",
- "types": "dist/index.d.ts",
- "type": "module",
- "license": "MIT",
- "keywords": [
-  "opencode",
-  "opencode-plugin",
-  "ai",
-  "agents",
-  "writing",
-  "swarm",
-  "multi-agent",
-  "llm"
- ],
- "files": [
-  "dist",
-  "README.md",
-  "LICENSE",
-  "prompts",
-  "references",
-  "templates"
- ],
- "scripts": {
-  "build": "bun build src/index.ts --outdir dist --target node --format esm && tsc --emitDeclarationOnly",
-  "typecheck": "tsc --noEmit",
-  "test": "bun test",
-  "lint": "bun run scripts/check-records.ts && biome lint .",
-  "format": "biome format . --write",
-  "check": "biome check --write .",
-  "prepublishOnly": "bun run build",
-  "check-records": "bun run scripts/check-records.ts",
-  "coverage": "bun test --coverage",
-  "check-coverage": "bun run scripts/check-coverage.ts"
- },
- "dependencies": {
-  "@opencode-ai/plugin": "^1.1.53",
-  "@opencode-ai/sdk": "^1.1.53",
-  "mdast-util-from-markdown": "^2.0.2",
-  "mdast-util-gfm": "^3.1.0",
-  "micromark-extension-gfm": "^3.0.0",
-  "unist-util-visit": "^5.1.0",
-  "zod": "^4.1.8"
- },
- "devDependencies": {
-  "@biomejs/biome": "2.3.14",
-  "@types/mdast": "^4.0.4",
-  "bun-types": "latest",
-  "typescript": "^5.7.3"
- }
+    "name": "opencode-webnovel-forge",
+    "version": "2.0.0",
+    "description": "AI Web Novel creation swarm - multi-agent orchestration for Chinese web novel writing",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "type": "module",
+    "license": "MIT",
+    "keywords": [
+        "opencode",
+        "opencode-plugin",
+        "ai",
+        "agents",
+        "writing",
+        "swarm",
+        "multi-agent",
+        "llm"
+    ],
+    "files":  [
+                   "dist",
+                   "README.md",
+                   "LICENSE",
+                   "prompts",
+                   "references",
+                   "templates",
+                   "presets"
+               ],
+    "scripts": {
+        "build": "bun build src/index.ts --outdir dist --target node --format esm && tsc --emitDeclarationOnly",
+        "typecheck": "tsc --noEmit",
+        "test": "bun test",
+        "lint": "bun run scripts/check-records.ts && biome lint .",
+        "format": "biome format . --write",
+        "check": "biome check --write .",
+        "prepublishOnly": "bun run build",
+        "check-records": "bun run scripts/check-records.ts",
+        "coverage": "bun test --coverage",
+        "check-coverage": "bun run scripts/check-coverage.ts"
+    },
+    "dependencies": {
+        "@opencode-ai/plugin": "^1.1.53",
+        "@opencode-ai/sdk": "^1.1.53",
+        "js-yaml": "^5.2.1",
+        "mdast-util-from-markdown": "^2.0.2",
+        "mdast-util-gfm": "^3.1.0",
+        "micromark-extension-gfm": "^3.0.0",
+        "unist-util-visit": "^5.1.0",
+        "zod": "^4.1.8"
+    },
+    "devDependencies": {
+        "@biomejs/biome": "2.3.14",
+        "@types/js-yaml": "^4.0.9",
+        "@types/mdast": "^4.0.4",
+        "bun-types": "latest",
+        "typescript": "^5.7.3"
+    }
 }

@@ -1,0 +1,51 @@
+# ============================================================
+# Plan B — 国内付费模型 (opencode-go 路由到国内模型)
+# 使用方法: 复制此文件到 .opencode/opencode-webnovel-forge.yaml
+#           然后编辑 agent 的 model/temperature
+# ============================================================
+language: zh
+qa_retry_limit: 3
+
+agents:
+  editor_in_chief:
+    model: opencode-go/qwen3.7-max
+    temperature: 0.1
+  research_market:
+    model: opencode-go/glm-5.1
+    temperature: 0.2
+  research_deep:
+    model: opencode-go/qwen3.7-max
+    temperature: 0.2
+  writer_a:
+    model: opencode-go/kimi-k2.6
+    temperature: 0.2
+  writer_b:
+    model: opencode-go/kimi-k2.6
+    temperature: 0.5
+  writer_c:
+    model: opencode-go/kimi-k2.6
+    temperature: 0.8
+  world_builder:
+    model: opencode-go/qwen3.7-max
+    temperature: 0.3
+  character_designer:
+    model: opencode-go/qwen3.7-max
+    temperature: 0.4
+  plot_architect:
+    model: opencode-go/qwen3.7-max
+    temperature: 0.3
+  shuang_analyzer:
+    model: opencode-go/glm-5.1
+    temperature: 0.2
+  pacing_reviewer:
+    model: opencode-go/glm-5.1
+    temperature: 0.2
+  genre_checker:
+    model: opencode-go/qwen3.7-max
+    temperature: 0.1
+  reader_simulator:
+    model: opencode-go/qwen3.7-max
+    temperature: 0.4
+  copy_editor:
+    model: opencode-go/minimax-m2.5
+    temperature: 0.1

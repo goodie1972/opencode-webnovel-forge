@@ -20,6 +20,7 @@ import {
 } from './tools';
 import { log, warn } from './utils';
 import { createSwarmCommandHandler } from './commands';
+import { scanMasters } from './prompts';
 
 // Export plan module for external use (Phase 2.2 scaffolding)
 export * from './plan';
@@ -41,7 +42,7 @@ export function getSafeConfigKeys(config: PluginConfig): string[] {
 
 export function formatStartupLog(agentCount: number, configKeys: string[], directory: string): string {
 	const relativePath = path.relative(process.cwd(), directory) || '.';
-	return `[WRITER_SWARM INIT] agents=${agentCount} configKeys=${configKeys.join(',')} directory=${relativePath}`;
+	return `[WEBNOVEL_FORGE INIT] agents=${agentCount} configKeys=${configKeys.join(',')} directory=${relativePath}`;
 }
 
 export interface PluginInitConfig {
@@ -83,6 +84,10 @@ export const WriterSwarmPlugin: Plugin = async ({ client, project, directory }) 
 	const startupMessage = formatStartupLog(agentCount, safeConfigKeys, directory);
 	console.log(startupMessage);
 
+	// Scan master styles on startup
+	const masters = scanMasters();
+	log('Master styles scanned', { count: masters.length, names: masters.map((m) => m.displayName) });
+
 	const verboseInit = process.env.VERBOSE_INIT === '1' || process.env.LOG_LEVEL === 'debug';
 
 	if (verboseInit) {
@@ -108,7 +113,7 @@ export const WriterSwarmPlugin: Plugin = async ({ client, project, directory }) 
 	const systemTransform = composeHandlers(...transformHandlers);
 
 	return {
-		name: 'opencode-writer-swarm',
+		name: 'opencode-webnovel-forge',
 
 		agent: agents,
 
@@ -128,6 +133,10 @@ export const WriterSwarmPlugin: Plugin = async ({ client, project, directory }) 
 			(opencodeConfig.command as Record<string, { template: string; description: string }>)['swarm'] = {
 				template: '{{arguments}}',
 				description: 'Swarm management commands',
+			};
+			(opencodeConfig.command as Record<string, { template: string; description: string }>)['novel'] = {
+				template: '{{arguments}}',
+				description: 'WebNovel Forge commands (model/prompt/master config)',
 			};
 
 			log('Config applied', {
@@ -159,3 +168,4 @@ export const WriterSwarmPlugin: Plugin = async ({ client, project, directory }) 
 };
 
 export default WriterSwarmPlugin;
+
