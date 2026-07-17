@@ -3,17 +3,37 @@
 import { callAgent } from '../agent-runtime';
 import type { StageInput, StageResult, StageRunner } from './types';
 import { reviewContent, saveQualityReport } from '../quality/quality-review';
+import { generateControlCard, saveControlCard } from '../control/control-card';
 
 const WRITER_POOL = ['writer_a', 'writer_b', 'writer_c'];
+
+function injectControlCard(prompt: string, card: any): string {
+  return [
+    prompt,
+    `\n【本章控制卡】`,
+    `任务: ${card.mission}`, // already in Chinese
+    `推进情节: ${card.linesToAdvance.join(', ')}`,
+    `偿清债务: ${card.debtsToReturn.join(', ')}`,
+    `核心冲突: ${card.conflict}`,
+    `结尾余波: ${card.endingResidue}`,
+  ].join('\n');
+}
 
 export const runFirstDraft: StageRunner = async (input) => {
   const writtenCount = input.context.recentChapters?.length || 0;
   const chaptersToWrite = Math.max(0, input.context.totalChapters - writtenCount);
 
   if (chaptersToWrite <= 1) {
+    let prompt = buildChapterPrompt(input, writtenCount + 1);
+    
+    // Inject control card into prompt if present
+    if (input.controlCard) {
+      prompt = injectControlCard(prompt, input.controlCard);
+    }
+    
     const response = await callAgent({
       agentName: 'first_draft_writer',
-      userMessage: buildChapterPrompt(input, writtenCount + 1),
+      userMessage: prompt,
       masterStyle: input.masterStyle,
     });
     return {
@@ -28,21 +48,30 @@ export const runFirstDraft: StageRunner = async (input) => {
 
   // First batch: parallel writers from pool
   const parallelResults = await Promise.all(
-    Array.from({ length: parallelCount }, (_, i) =>
-      callAgent({
+    Array.from({ length: parallelCount }, (_, i) => {
+      let prompt = buildChapterPrompt(input, writtenCount + i + 1);
+      // Inject control card into prompt if present (using the same card for all parallel writers)
+      if (input.controlCard) {
+        prompt = injectControlCard(prompt, input.controlCard);
+      }
+      return callAgent({
         agentName: WRITER_POOL[i],
-        userMessage: buildChapterPrompt(input, writtenCount + i + 1),
+        userMessage: prompt,
         masterStyle: input.masterStyle,
-      })
-    )
+      });
+    })
   );
 
   // Remaining: single writer sequential
   const remainingResults: { content: string; tokensUsed?: number }[] = [];
   for (let i = parallelCount; i < chaptersToWrite; i++) {
+    let prompt = buildChapterPrompt(input, writtenCount + i + 1);
+    if (input.controlCard) {
+      prompt = injectControlCard(prompt, input.controlCard);
+    }
     const resp = await callAgent({
       agentName: 'writer_a',
-      userMessage: buildChapterPrompt(input, writtenCount + i + 1),
+      userMessage: prompt,
       masterStyle: input.masterStyle,
     });
     remainingResults.push(resp);

@@ -1,4 +1,5 @@
 import type { AgentContext } from '../context/assemble';
+import type { ChapterControlCard } from '../control/types';
 
 export interface StageInput {
   context: AgentContext;
@@ -6,6 +7,9 @@ export interface StageInput {
   userInstructions?: string;
   previousOutput?: string;
   chapterIndex?: number;
+  projectsDir?: string;
+  projectDir?: string;
+  controlCard?: ChapterControlCard;
 }
 
 export interface StageResult {

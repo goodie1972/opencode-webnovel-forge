@@ -6,34 +6,16 @@ export interface ChapterControlCard {
   debtsToReturn: string[];
   conflict: string;
   endingResidue: string;
-  characterStateChanges: string[];
-}
-
-export interface CharacterState {
-  lastAppearance: number;
-  status: string;
-  relationshipChanges: string[];
-}
-
-export interface PlotlineState {
-  lastAdvancement: number;
-  status: string;
-  nextExpectedBeat: string;
-}
-
-export interface ForeshadowState {
-  status: 'planted' | 'active' | 'paid_off' | 'abandoned';
-  plantedAt: number;
-  expectedPayoffWindow: [number, number];
+  characterStateChanges: { characterId: string; status: string }[];
 }
 
 export interface DynamicState {
   lastChapterIndex: number;
-  characterStates: Record<string, CharacterState>;
-  plotlineProgress: Record<string, PlotlineState>;
-  foreshadowingStatus: Record<string, ForeshadowState>;
+  characterStates: Record<string, { lastAppearance: number; status: string; relationshipChanges: any[] }>;
+  plotlineProgress: Record<string, { lastAdvancement: number; status: string; nextExpectedBeat?: string }>;
+  foreshadowingStatus: Record<string, { status: string; hints: string[]; plantedAt: number; expectedPayoffWindow: [number, number] }>;
   emotionalDebts: string[];
-  pendingConfirmations: string[];
+  pendingConfirmations: any[];
   chaptersWritten: number;
 }
 

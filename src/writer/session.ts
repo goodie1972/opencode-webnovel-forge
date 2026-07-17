@@ -13,6 +13,9 @@ import { runWorldBuilding, runCharacterDesign, runOutline, runFirstDraft, runRev
 import type { StageResult, StageInput } from './stages/types';
 import { reviewContent, saveQualityReport } from './quality/quality-review';
 import { injectStyle } from './style/inject-style';
+import { generateControlCard, saveControlCard } from './control/control-card';
+import { createEmptyState, loadDynamicState, saveDynamicState, updateAfterChapter } from './control/dynamic-state';
+import type { DynamicState } from './control/types';
 
 export type SessionMode = 'auto' | 'semi-auto';
 
@@ -97,11 +100,30 @@ export class WritingSession {
     
     // Prepare stage input
     const previousOutput = this.getPreviousStageOutput(currentStage);
+    
+    // Load or create dynamic state
+    let dynamicState = loadDynamicState(this.pm.projectsDir, this.projectDir);
+    if (!dynamicState) {
+      dynamicState = createEmptyState();
+      dynamicState.chaptersWritten = project.chapters.length || 0;
+    }
+    
+    // Generate control card for this stage
+    const controlCard = generateControlCard(
+      project.chapters.length + 1,
+      `Chapter ${project.chapters.length + 1}`,
+      agentContext,
+      dynamicState,
+    );
+    
     const stageInput: StageInput = {
       context: agentContext,
       masterStyle: this.config.masterStyle,
       userInstructions,
       previousOutput,
+      projectsDir: this.pm.projectsDir,
+      projectDir: this.projectDir,
+      controlCard,
     };
 
     // Map stage to runner function
@@ -138,6 +160,10 @@ export class WritingSession {
     } catch {
       // Best-effort: don't fail the stage if report saving fails
     }
+
+    // Update dynamic state after chapter written
+    const updatedState = updateAfterChapter(dynamicState, controlCard);
+    saveDynamicState(this.pm.projectsDir, this.projectDir, updatedState);
 
     // Save to workflow stageData - store the full result, not just output
     this.workflow.setStageData(currentStage, 'result', styledResult);
