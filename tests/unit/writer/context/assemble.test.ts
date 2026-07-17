@@ -11,9 +11,10 @@ import { buildAgentContext } from '../../../../src/writer/context/assemble';
 
 const TMP = path.join(process.cwd(), '.test_context_tmp');
 
-describe('buildAgentContext', () => {
+describe('buildAgentContext - enriched data', () => {
   let pm: NovelProjectManager;
   let dirName: string;
+  let chId: string;
 
   beforeEach(() => {
     if (fs.existsSync(TMP)) fs.rmSync(TMP, { recursive: true });
@@ -38,15 +39,16 @@ describe('buildAgentContext', () => {
     world.addEvent({ title: 'event_1', description: 'desc', era: 'ancient', year: 1000, impact: 'high' });
 
     const chars = new CharacterService(pm, dirName);
-    chars.addCharacter({ name: 'hero', role: 'protagonist', aliases: [], traits: ['brave', 'smart'], background: '', goal: 'ascend', arc: '', voice: '' });
-    chars.addCharacter({ name: 'villain', role: 'villain', aliases: [], traits: ['cruel'], background: '', goal: 'rule', arc: '', voice: '' });
+    chars.addCharacter({ name: 'hero', role: 'protagonist', aliases: [], traits: ['brave', 'smart'], background: 'hero_background', goal: 'ascend', arc: 'hero_arc', voice: 'hero_voice' });
+    const chars2 = new CharacterService(pm, dirName);
+    chars2.addCharacter({ name: 'villain', role: 'villain', aliases: [], traits: ['cruel'], background: 'villain_background', goal: 'rule', arc: 'villain_arc', voice: 'villain_voice' });
 
     const plot = new PlotService(pm, dirName);
-    plot.addArc({ title: 'arc_1', summary: 'main story', phase: 1 });
-    plot.addSubplot({ name: 'sub_1', description: 'side story', relatedArc: '', status: 'active' });
+    plot.addArc({ title: 'arc_1', summary: 'main story', phase: 2 });
+    plot.addSubplot({ name: 'sub_1', description: 'side story', relatedArc: 'arc_1', status: 'active' });
 
     const fm = new ForeshadowingManager(pm, dirName);
-    const chId = created.project.chapters[0].id;
+    chId = created.project.chapters[0].id;
     fm.addEntry({ description: '神秘玉佩', category: 'item', importance: 8, plantAt: { chapterId: chId, detail: '发现玉佩' } });
     fm.addEntry({ description: '师尊秘密', category: 'character', importance: 5, plantAt: { chapterId: chId, detail: '师尊身份可疑' } });
 
@@ -85,37 +87,80 @@ describe('buildAgentContext', () => {
     expect(ctx.recentChapters[1].title).toBe('chapter_4');
   });
 
-  it('loads world summary', async () => {
+  it('loads world summary with detailed faction and location data', async () => {
     const ctx = await buildAgentContext(pm, dirName);
     expect(ctx.worldSummary.factions).toBe(2);
     expect(ctx.worldSummary.locations).toBe(2);
     expect(ctx.worldSummary.events).toBe(1);
     expect(ctx.worldSummary.factionNames).toContain('faction_a');
     expect(ctx.worldSummary.locationNames).toContain('loc_a');
+    
+    expect(ctx.worldSummary.factionDetails).toBeDefined();
+    expect(ctx.worldSummary.factionDetails.length).toBe(2);
+    expect(ctx.worldSummary.factionDetails[0].name).toBe('faction_a');
+    expect(ctx.worldSummary.factionDetails[0].description).toBe('desc');
+    expect(ctx.worldSummary.factionDetails[0].goals).toContain('goal1');
+    expect(ctx.worldSummary.factionDetails[0].power).toBe(90);
+    expect(ctx.worldSummary.factionDetails[0].memberCount).toBe(0);
+    
+    expect(ctx.worldSummary.locationDetails).toBeDefined();
+    expect(ctx.worldSummary.locationDetails.length).toBe(2);
+    expect(ctx.worldSummary.locationDetails[0].name).toBe('loc_a');
+    expect(ctx.worldSummary.locationDetails[0].description).toBe('desc');
+    expect(ctx.worldSummary.locationDetails[0].type).toBe('mountain');
   });
 
-  it('loads characters', async () => {
+  it('loads characters with enriched data (background, arc, voice, relationships)', async () => {
     const ctx = await buildAgentContext(pm, dirName);
     expect(ctx.characters.length).toBe(2);
     expect(ctx.characters[0].name).toBe('hero');
     expect(ctx.characters[0].role).toBe('protagonist');
     expect(ctx.characters[0].traits).toContain('brave');
     expect(ctx.characters[0].goal).toBe('ascend');
+    expect(ctx.characters[0].background).toBe('hero_background');
+    expect(ctx.characters[0].arc).toBe('hero_arc');
+    expect(ctx.characters[0].voice).toBe('hero_voice');
+    expect(ctx.characters[0].relationships).toBeDefined();
+    expect(ctx.characters[0].relationships.length).toBe(0);
   });
 
-  it('loads plot arcs and subplots', async () => {
+  it('resolves relationship targetId to character name', async () => {
+    const chars = new CharacterService(pm, dirName);
+    const c1 = chars.addCharacter({ name: 'rel_test_a', role: 'protagonist', aliases: [], traits: ['x'], background: 'b', goal: 'g', arc: 'a', voice: 'v' });
+    const c2 = chars.addCharacter({ name: 'rel_test_b', role: 'side', aliases: [], traits: ['y'], background: 'b', goal: 'g', arc: 'a', voice: 'v' });
+    chars.addRelationship(c1.id, { targetId: c2.id, type: 'rival', description: '死对头' });
+    const ctx = await buildAgentContext(pm, dirName);
+    const testA = ctx.characters.find(c => c.name === 'rel_test_a');
+    expect(testA).toBeDefined();
+    expect(testA!.relationships.length).toBe(1);
+    expect(testA!.relationships[0].targetName).toBe('rel_test_b');
+    expect(testA!.relationships[0].type).toBe('rival');
+    expect(testA!.relationships[0].description).toBe('死对头');
+  });
+
+  it('loads plot arcs with phase and chapterCount', async () => {
     const ctx = await buildAgentContext(pm, dirName);
     expect(ctx.plotArcs.length).toBe(1);
     expect(ctx.plotArcs[0].title).toBe('arc_1');
-    expect(ctx.subplots.length).toBe(1);
-    expect(ctx.subplots[0].name).toBe('sub_1');
+    expect(ctx.plotArcs[0].phase).toBe(2);
+    expect(ctx.plotArcs[0].chapterCount).toBe(0);
   });
 
-  it('loads active foreshadowing sorted by importance', async () => {
+  it('loads subplots with relatedArc', async () => {
+    const ctx = await buildAgentContext(pm, dirName);
+    expect(ctx.subplots.length).toBe(1);
+    expect(ctx.subplots[0].name).toBe('sub_1');
+    expect(ctx.subplots[0].relatedArc).toBe('arc_1');
+  });
+
+  it('loads active foreshadowing with status, plantAt', async () => {
     const ctx = await buildAgentContext(pm, dirName);
     expect(ctx.activeForeshadowing.length).toBe(2);
+    expect(ctx.activeForeshadowing[0].description).toBe('神秘玉佩');
     expect(ctx.activeForeshadowing[0].importance).toBe(8);
-    expect(ctx.activeForeshadowing[1].importance).toBe(5);
+    expect(ctx.activeForeshadowing[0].category).toBe('item');
+    expect(ctx.activeForeshadowing[0].status).toBe('planted');
+    expect(ctx.activeForeshadowing[0].plantAt).toEqual({ chapterId: chId, detail: '发现玉佩' });
   });
 
   it('loads shuang stats', async () => {
@@ -139,6 +184,9 @@ describe('buildAgentContext', () => {
     expect(ctx.activeForeshadowing).toEqual([]);
     expect(ctx.shuangStats.total).toBe(0);
     expect(ctx.contextMemo).toBe('');
+    
+    expect(ctx.worldSummary.factionDetails).toEqual([]);
+    expect(ctx.worldSummary.locationDetails).toEqual([]);
   });
 
   it('throws for non-existent project', async () => {

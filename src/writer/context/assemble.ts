@@ -1,6 +1,6 @@
 "use strict";
 
-import { type NovelMeta } from '../../novel/types';
+import { type NovelMeta, type CharacterRole, type ArcStatus, type ForeshadowingCategory, type ForeshadowingStatus } from '../../novel/types';
 import { type ProjectData } from '../../novel/project';
 import { WorldService } from '../../novel/world';
 import { CharacterService } from '../../novel/character';
@@ -21,12 +21,30 @@ export interface AgentContext {
     locations: number; 
     events: number; 
     factionNames: string[]; 
-    locationNames: string[]; 
+    locationNames: string[];
+    factionDetails: { name: string; description: string; goals: string[]; power: number; memberCount: number }[];
+    locationDetails: { name: string; description: string; type: string }[];
   };
-  characters: { name: string; role: string; traits: string[]; goal: string }[];
-  plotArcs: { title: string; summary: string; status: string }[];
-  activeForeshadowing: { description: string; importance: number; category: string }[];
-  subplots: { name: string; description: string; status: string }[];
+  characters: { 
+    name: string; 
+    role: string; 
+    traits: string[]; 
+    goal: string;
+    background: string;
+    arc: string;
+    voice: string;
+    relationships: { targetName: string; type: string; description: string }[];
+  }[];
+  plotArcs: { title: string; summary: string; status: string; phase: number; chapterCount: number }[];
+  activeForeshadowing: { 
+    description: string; 
+    importance: number; 
+    category: string;
+    status: string;
+    plantAt: { chapterId: string; detail: string };
+    payoffAt?: { chapterId: string; detail: string };
+  }[];
+  subplots: { name: string; description: string; status: string; relatedArc: string }[];
   shuangStats: { total: number; byType: Record<string, number>; avgIntensity: number };
   contextMemo: string;
 }
@@ -147,16 +165,37 @@ async function getWorldSummary(worldService: WorldService) {
     events: events.length,
     factionNames: factions.map(f => f.name),
     locationNames: locations.map(l => l.name),
+    factionDetails: factions.map(f => ({
+      name: f.name,
+      description: f.description,
+      goals: f.goals,
+      power: f.power,
+      memberCount: f.members.length,
+    })),
+    locationDetails: locations.map(l => ({
+      name: l.name,
+      description: l.description,
+      type: l.type,
+    })),
   };
 }
 
 async function getCharacters(characterService: CharacterService) {
   const characters = characterService.getCharacters();
+  const nameById = Object.fromEntries(characters.map(c => [c.id, c.name]));
   return characters.map(c => ({
     name: c.name,
     role: c.role,
     traits: c.traits,
     goal: c.goal,
+    background: c.background,
+    arc: c.arc,
+    voice: c.voice,
+    relationships: c.relationships.map(r => ({
+      targetName: nameById[r.targetId] ?? r.targetId,
+      type: r.type,
+      description: r.description,
+    })),
   }));
 }
 
@@ -165,12 +204,15 @@ async function getPlotData(plotService: PlotService) {
     arcs: plotService.getArcs().map(a => ({
       title: a.title,
       summary: a.summary,
-      status: a.status,
+      status: a.status as string,
+      phase: a.phase,
+      chapterCount: a.chapters.length,
     })),
     subplots: plotService.getSubplots().map(s => ({
       name: s.name,
       description: s.description,
-      status: s.status,
+      status: s.status as string,
+      relatedArc: s.relatedArc,
     })),
   };
 }
@@ -185,6 +227,9 @@ async function getActiveForeshadowing(foreshadowingManager: ForeshadowingManager
     .map(entry => ({
       description: entry.description,
       importance: entry.importance,
-      category: entry.category,
+      category: entry.category as string,
+      status: entry.status,
+      plantAt: entry.plantAt,
+      payoffAt: entry.payoffAt,
     }));
 }

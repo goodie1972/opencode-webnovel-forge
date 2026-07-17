@@ -1,0 +1,118 @@
+{
+  "projectDir": "auto_test",
+  "config": {
+    "mode": "auto",
+    "autoSaveInterval": 60000
+  },
+  "workflow": {
+    "currentStage": "done",
+    "stageHistory": [
+      {
+        "stage": "world_building",
+        "enteredAt": "2026-07-17T07:07:43.419Z",
+        "exitedAt": "2026-07-17T07:07:43.431Z"
+      },
+      {
+        "stage": "character_design",
+        "enteredAt": "2026-07-17T07:07:43.431Z",
+        "exitedAt": "2026-07-17T07:07:43.438Z"
+      },
+      {
+        "stage": "outline",
+        "enteredAt": "2026-07-17T07:07:43.438Z",
+        "exitedAt": "2026-07-17T07:07:43.447Z"
+      },
+      {
+        "stage": "first_draft",
+        "enteredAt": "2026-07-17T07:07:43.447Z",
+        "exitedAt": "2026-07-17T07:07:43.456Z"
+      },
+      {
+        "stage": "revision",
+        "enteredAt": "2026-07-17T07:07:43.456Z",
+        "exitedAt": "2026-07-17T07:07:43.466Z"
+      },
+      {
+        "stage": "polish",
+        "enteredAt": "2026-07-17T07:07:43.466Z",
+        "exitedAt": "2026-07-17T07:07:43.476Z"
+      }
+    ],
+    "stageData": [
+      [
+        "world_building",
+        {
+          "result": {
+            "output": "mock output",
+            "agentUsed": "world_builder",
+            "tokensUsed": 100,
+            "stageName": "world_building"
+          },
+          "exited": true
+        }
+      ],
+      [
+        "character_design",
+        {
+          "result": {
+            "output": "mock output",
+            "agentUsed": "character_designer",
+            "tokensUsed": 100,
+            "stageName": "character_design"
+          },
+          "exited": true
+        }
+      ],
+      [
+        "outline",
+        {
+          "result": {
+            "output": "mock output",
+            "agentUsed": "outliner",
+            "tokensUsed": 100,
+            "stageName": "outline"
+          },
+          "exited": true
+        }
+      ],
+      [
+        "first_draft",
+        {
+          "result": {
+            "output": "mock output",
+            "agentUsed": "first_draft_writer",
+            "tokensUsed": 100,
+            "stageName": "first_draft"
+          },
+          "exited": true
+        }
+      ],
+      [
+        "revision",
+        {
+          "result": {
+            "output": "mock output",
+            "agentUsed": "revision_editor",
+            "tokensUsed": 100,
+            "stageName": "revision"
+          },
+          "exited": true
+        }
+      ],
+      [
+        "polish",
+        {
+          "result": {
+            "output": "mock output",
+            "agentUsed": "polisher",
+            "tokensUsed": 100,
+            "stageName": "polish"
+          },
+          "exited": true
+        }
+      ]
+    ]
+  },
+  "startedAt": "2026-07-17T07:07:43.419Z",
+  "updatedAt": "2026-07-17T07:07:43.478Z"
+}

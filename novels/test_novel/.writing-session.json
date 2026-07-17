@@ -1,0 +1,31 @@
+{
+  "projectDir": "test_novel",
+  "config": {
+    "mode": "semi-auto",
+    "autoSaveInterval": 60000
+  },
+  "workflow": {
+    "currentStage": "world_building",
+    "stageHistory": [
+      {
+        "stage": "world_building",
+        "enteredAt": "2026-07-17T07:07:43.378Z"
+      }
+    ],
+    "stageData": [
+      [
+        "world_building",
+        {
+          "result": {
+            "output": "mock output",
+            "agentUsed": "world_builder",
+            "tokensUsed": 100,
+            "stageName": "world_building"
+          }
+        }
+      ]
+    ]
+  },
+  "startedAt": "2026-07-17T07:07:43.378Z",
+  "updatedAt": "2026-07-17T07:07:43.401Z"
+}

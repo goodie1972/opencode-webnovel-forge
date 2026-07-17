@@ -40,27 +40,29 @@ Swarm: local
 
 | Tool | Calls | Success | Failed | Avg Duration |
 |------|-------|---------|--------|--------------|
-| read | 224 | 224 | 0 | 41241ms |
-| bash | 138 | 138 | 0 | 4730ms |
-| edit | 117 | 117 | 0 | 2455ms |
-| write | 99 | 99 | 0 | 1001ms |
-| grep | 37 | 37 | 0 | 2141ms |
-| glob | 19 | 19 | 0 | 1010ms |
-| todowrite | 19 | 19 | 0 | 21ms |
-| update_task_status | 13 | 13 | 0 | 228ms |
-| save_plan | 7 | 7 | 0 | 216ms |
-| task | 7 | 7 | 0 | 83059ms |
+| bash | 471 | 471 | 0 | 7409ms |
+| read | 443 | 443 | 0 | 20942ms |
+| edit | 249 | 249 | 0 | 1731ms |
+| write | 172 | 172 | 0 | 1600ms |
+| grep | 60 | 60 | 0 | 1395ms |
+| glob | 44 | 44 | 0 | 546ms |
+| todowrite | 34 | 34 | 0 | 22ms |
+| task | 16 | 16 | 0 | 469267ms |
+| update_task_status | 15 | 15 | 0 | 211ms |
+| gitingest | 12 | 12 | 0 | 10646ms |
+| skill | 9 | 9 | 0 | 160ms |
+| save_plan | 8 | 8 | 0 | 210ms |
 | search | 7 | 7 | 0 | 127ms |
 | phase_complete | 6 | 6 | 0 | 17475ms |
-| gitingest | 4 | 4 | 0 | 2867ms |
-| skill | 3 | 3 | 0 | 184ms |
+| retrieve_summary | 6 | 6 | 0 | 28ms |
+| swarm_command | 5 | 5 | 0 | 74ms |
+| fetch_get_markdown | 5 | 5 | 0 | 130ms |
+| question | 4 | 4 | 0 | 72666ms |
 | check_gate_status | 3 | 3 | 0 | 27ms |
-| swarm_command | 3 | 3 | 0 | 80ms |
-| retrieve_summary | 3 | 3 | 0 | 44ms |
-| question | 2 | 2 | 0 | 109368ms |
 | set_qa_gates | 2 | 2 | 0 | 72ms |
 | dispatch_lanes | 2 | 2 | 0 | 84064ms |
 | sequential-thinking_sequentialthinking | 2 | 2 | 0 | 59ms |
+| websearch | 2 | 2 | 0 | 3082ms |
 | invalid | 1 | 1 | 0 | 2ms |
 | spec_write | 1 | 1 | 0 | 45ms |
 | declare_scope | 1 | 1 | 0 | 8ms |
@@ -68,6 +70,6 @@ Swarm: local
 | write_retro | 1 | 1 | 0 | 20ms |
 | write_drift_evidence | 1 | 1 | 0 | 141ms |
 | checkpoint | 1 | 1 | 0 | 573ms |
-| fetch_get_markdown | 1 | 1 | 0 | 272ms |
 | web_fetch | 1 | 1 | 0 | 12ms |
 | batch_symbols | 1 | 1 | 0 | 55ms |
+| webfetch | 1 | 1 | 0 | 9754ms |
