@@ -10,22 +10,54 @@
 
 ---
 
-### Task 1: Agent Runtime — `src/writer/agent-runtime.ts`
+### Task 1: Agent Runtime — `src/writer/`
 
 **Files:**
-- Create: `src/writer/agent-runtime.ts`
+- Create: `src/writer/agent-runtime.ts` — main entry, config + callAgent
+- Create: `src/writer/providers/provider.ts` — LLMProvider interface
+- Create: `src/writer/providers/openai.ts` — OpenAI-compatible provider
+- Create: `src/writer/providers/anthropic.ts` — Anthropic provider
 - Test: `tests/unit/writer/agent-runtime.test.ts`
 
-**Step 1: Define types**
+**Step 1: Provider interface**
+
+```typescript
+export interface LLMProvider {
+  name: string;
+  match(model: string): boolean; // returns true if this provider handles this model
+  call(
+    model: string,
+    messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
+    options: { temperature?: number; maxTokens?: number; signal?: AbortSignal },
+  ): Promise<{ content: string; model: string; tokensUsed?: number }>;
+}
+```
+
+**Step 2: OpenAI provider**
+
+- Implements LLMProvider
+- `match(model)` — true for models not matching Anthropic
+- Uses `fetch()` to call `https://api.openai.com/v1/chat/completions` (with configurable baseUrl)
+- Supports `apiKey` from options
+- Parses `usage.total_tokens` from response
+
+**Step 3: Anthropic provider**
+
+- Implements LLMProvider
+- `match(model)` — true when model starts with `anthropic/` or `claude-`
+- Calls `https://api.anthropic.com/v1/messages`
+- Uses `x-api-key` header
+
+**Step 4: callAgent function**
 
 ```typescript
 export interface AgentCallOptions {
   agentName: string;
-  systemPrompt?: string; // extra instructions beyond the prompt file
+  systemPrompt?: string;
   userMessage: string;
   model?: string;
   temperature?: number;
-  masterStyle?: string; // optional master style name
+  masterStyle?: string;
 }
 
 export interface AgentResponse {
@@ -36,34 +68,21 @@ export interface AgentResponse {
 }
 
 export interface AgentRuntimeConfig {
-  apiKey: string;
+  apiKey?: string;
+  anthropicKey?: string;
   baseUrl?: string;
   defaultModel?: string;
+  timeoutMs?: number;
 }
 ```
 
-**Step 2: Implement callAgent**
+- `callAgent(options)`: load prompt from JSON, optionally inject master style, pick provider, call LLM, time it
+- Error classes: `AgentTimeoutError`, `AgentAuthError`, `AgentResponseError`
 
-- `callAgent(options: AgentCallOptions): Promise<AgentResponse>`
-- Load prompt from `prompts/agents/{agentName}.json`
-- If masterStyle provided, call `injectStyle()` (Task 2)
-- Determine model: options.model > project settings > defaults
-- Call LLM via fetch (OpenAI-compatible API)
-- Return structured response
-- Error handling: timeout, auth failure, malformed response
+**Step 5: Unit test**
 
-Support two API shapes initially:
-1. OpenAI-compatible (`/v1/chat/completions`)
-2. Anthropic (`/v1/messages`)
-
-Detection: if model starts with `anthropic/` or `claude-` → Anthropic format, else OpenAI format.
-
-**Step 3: Unit test with mock fetch**
-
-- Test prompt loading
-- Test style injection
-- Test model selection fallback
-- Test error handling
+- Mock providers
+- Test prompt loading, style injection, model selection, error handling
 
 ### Task 2: Master Style Injection — `src/writer/style/inject-style.ts`
 
@@ -88,7 +107,54 @@ export function injectStyle(basePrompt: string, styleName: string): string
 - Test blended style injection
 - Test missing style file → fallback silently
 
-### Task 3: Quality Review Pipeline — `src/writer/quality/`
+### Task 3: Context Assembly — `src/writer/context/`
+
+**Files:**
+- Create: `src/writer/context/assemble.ts`
+- Test: `tests/unit/writer/context/assemble.test.ts`
+
+**Step 1: ContextBuilder types**
+
+```typescript
+export interface AgentContext {
+  projectMeta: NovelMeta;
+  recentChapters: { title: string; index: number; content: string }[];
+  worldSummary: { factions: number; locations: number; events: number };
+  characters: { name: string; role: string; traits: string[] }[];
+  plotArcs: { title: string; summary: string; status: string }[];
+  activeForeshadowing: { description: string; importance: number; category: string }[];
+  shuangPlan: { total: number; byType: Record<string, number> };
+  contextMemo: string; // accumulated context.md content
+}
+```
+
+**Step 2: Implement buildAgentContext**
+
+```typescript
+export async function buildAgentContext(
+  pm: NovelProjectManager,
+  dirName: string,
+  options?: { chapterId?: string; maxContextLength?: number },
+): Promise<AgentContext>
+```
+
+- Read project meta
+- Read last 5 chapters content
+- Query WorldService for counts
+- Query CharacterService for character list
+- Query PlotService for arcs
+- Query ForeshadowingManager for active entries
+- Query ShuangPointTracker for stats
+- Read and include context.md content
+- Truncate if exceeds maxContextLength (default 8000 chars)
+
+**Step 3: Test**
+
+- Test assembly from a test project with mock data
+- Test truncation logic
+- Test with empty project
+
+### Task 4: Quality Review Pipeline — `src/writer/quality/`
 
 **Files:**
 - Create: `src/writer/quality/quality-review.ts`
@@ -148,7 +214,7 @@ export async function revisionLoop(
 - Max 3 rounds
 - Returns final report
 
-### Task 4: Stage Runners — `src/writer/stages/`
+### Task 5: Stage Runners — `src/writer/stages/`
 
 **Files:**
 - Create: `src/writer/stages/world-building.ts`
@@ -191,36 +257,27 @@ export async function runWorldBuilding(
 - Save via PacingAnalyzer
 - Generate foreshadowing plan → save via ForeshadowingManager
 
-**Step 4: first-draft.ts** — The core writing loop
+**Step 4: first-draft.ts** — The core writing loop (MVP: single writer)
 
 ```typescript
-export interface WriterLock {
-  lockedWriter: string | null;      // null until first evaluation
-  writerScores: Record<string, number[]>;
-}
-
 export async function runFirstDraft(
   pm: NovelProjectManager,
   dirName: string,
   runtime: AgentRuntime,
-  session: WritingSession,
+  writerName: string, // which writer agent to use (default: writer-a)
 ): Promise<{ chaptersWritten: number }>
 ```
 
 Algorithm per chapter:
 1. Read next synopsis from PlotService
-2. Build context: recent chapters context.md + tracker.json + world/character data
-3. If no writer locked yet:
-   a. Dispatch synopsis to writer_a, writer_b, writer_c in parallel
-   b. Evaluate 3 outputs (call editor-in-chief or use eval criteria)
-   c. Lock highest-scoring writer
-4. Else: dispatch to locked writer
-5. Save chapter content via NovelProjectManager.writeChapterContent
-6. Update ForeshadowingManager (mark payoffs)
-7. Update ShuangPointTracker (mark placed)
-8. Append to context.md
-9. Every 3 chapters: call runQualityReview + revisionLoop
-10. If locked writer fails quality twice → unlock, re-run step 3
+2. Build context via buildAgentContext (Task 3)
+3. Dispatch to configured writer agent with synopsis + context
+4. Save chapter content via NovelProjectManager.writeChapterContent
+5. Update ForeshadowingManager (mark payoffs from this chapter)
+6. Update ShuangPointTracker (mark points placed in this chapter)
+7. Append chapter event to context.md
+8. Every 3 chapters: call runQualityReview + revisionLoop
+9. If quality check fails → writer retries chapter once
 
 **Step 5: revision.ts**
 
@@ -234,26 +291,29 @@ Algorithm per chapter:
 - Final consistency pass
 - Update all chapter statuses to 'final'
 
-### Task 5: WritingSession — `src/writer/session.ts`
+### Task 6: WritingSession — `src/writer/session.ts`
 
 **Files:**
 - Create: `src/writer/session.ts`
 - Test: `tests/unit/writer/session.test.ts`
 
-**Step 1: Session types and state**
+**Step 1: Session schema types**
 
 ```typescript
 export type SessionMode = 'auto' | 'semi_auto';
-export type SessionStatus = 'idle' | 'running' | 'waiting_confirm' | 'completed' | 'aborted';
+export type SessionStatus = 'idle' | 'running' | 'waiting_confirm' | 'completed' | 'aborted' | 'error';
 
 export interface SessionState {
+  version: 1;
   projectDir: string;
   mode: SessionMode;
   status: SessionStatus;
   workflow: ReturnType<WorkflowStateMachine['serialize']>;
-  writerLock: WriterLock | null;
+  writerName: string;
+  completedStages: string[];
   currentStage: string;
-  logs: SessionLogEntry[];
+  logs: { timestamp: string; stage: string; message: string; level: 'info' | 'warn' | 'error' }[];
+  error?: { message: string; stage: string; timestamp: string };
 }
 ```
 
@@ -261,38 +321,36 @@ export interface SessionState {
 
 ```typescript
 export class WritingSession {
-  constructor(pm: NovelProjectManager, dirName: string, mode: SessionMode)
+  constructor(pm: NovelProjectManager, dirName: string, mode: SessionMode, writerName?: string)
   
-  async run(): Promise<void>
-  // - Load or create session state
-  // - Loop through workflow stages
-  // - For each stage: call runner
-  // - If semi_auto: emit 'waiting_confirm' → wait for confirm()
-  // - If auto: proceed immediately
-  // - Save state after each stage
-  // - Handle abort
+  // Main lifecycle
+  async run(): Promise<SessionState>
+  async resume(): Promise<SessionState>
   
-  async resume(): Promise<void>
-  // - Load saved session
-  // - Skip completed stages
-  // - Run remaining stages
-  
+  // Semi-auto mode control
   async confirm(): Promise<void>
-  // - Resume from waiting_confirm
-  
   async abort(): Promise<void>
-  // - Mark session as aborted
-  // - Save partial progress
+  
+  // Status
+  getState(): SessionState
+  get currentStageLabel(): string
+  
+  // Internal
+  private save(): void
+  private load(): SessionState | null
+  private runStage(stage: WorkflowStage): Promise<void>
 }
 ```
 
 **Step 3: Persistence**
 
 - Save to `novels/<dirName>/session.json`
-- Includes: workflow state, writer lock, stage completion status, logs
+- Schema version 1 with `version: 1` field
+- On resume: check version → if mismatch, throw migration error
+- Include: workflow state, completed stages, logs, error state
 - Load on `--continue`
 
-### Task 6: Commands — Update `src/commands/novel.ts`
+### Task 7: Commands — Update `src/commands/novel.ts`
 
 **Files:**
 - Modify: `src/commands/novel.ts`
@@ -320,7 +378,7 @@ export class WritingSession {
 - Add `export { WritingSession } from '../writer/session'`
 - Add `export { callAgent } from '../writer/agent-runtime'`
 
-### Task 7: Tests
+### Task 8: Tests
 
 **Files:**
 - Create: `tests/unit/writer/agent-runtime.test.ts`
@@ -337,7 +395,7 @@ Key test scenarios:
 - Session: auto/semi-auto flow, persistence, resume, abort
 - Integration: mock HTTP server for LLM API testing
 
-### Task 8: Barrel export + Build verification
+### Task 9: Barrel export + Build verification
 
 **Files:**
 - Create: `src/writer/index.ts`
