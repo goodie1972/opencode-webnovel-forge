@@ -4,3 +4,7 @@ export { AnthropicProvider } from './providers/anthropic';
 export { registerProvider, getProvider, resetProviders } from './providers';
 export { callAgent, AgentTimeoutError, AgentAuthError, AgentResponseError } from './agent-runtime';
 export type { AgentCallOptions, AgentResponse, AgentRuntimeConfig } from './agent-runtime';
+
+// Context assembly
+export { buildAgentContext } from './context/assemble';
+export type { AgentContext } from './context/assemble';
