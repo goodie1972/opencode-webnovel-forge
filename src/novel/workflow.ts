@@ -98,6 +98,7 @@ export class WorkflowStateMachine {
 	}
 
 	get progress(): number {
+		if (this.isComplete) return 1;
 		return (this.stageIndex + 1) / WORKFLOW_STAGES.length;
 	}
 

@@ -126,6 +126,75 @@ novels/<project>/           — 小说项目目录 (自动生成)
 
 当写作章节数 ≥ 3 时，前3章使用 `writer_a`/`writer_b`/`writer_c` 三个写手并行生成不同风格，后续章节锁定 `writer_a` 串行接续，确保风格一致性。
 
+## Installation
+
+### 1. 安装 OpenCode CLI
+
+```bash
+npm install -g @opencode-ai/cli
+```
+
+验证安装：
+
+```bash
+opencode --version
+```
+
+### 2. 安装 WebNovel Forge 插件
+
+```bash
+opencode plugin add opencode-webnovel-forge
+```
+
+或从源码安装（需提前克隆仓库）：
+
+```bash
+git clone https://github.com/goodie1972/opencode-webnovel-forge.git
+cd opencode-webnovel-forge
+opencode plugin install .
+```
+
+### 3. 配置 LLM API Key
+
+编辑 `~/.config/opencode/opencode.json`：
+
+```json
+{
+  "OPENAI_API_KEY": "sk-xxx",
+  "ANTHROPIC_API_KEY": "sk-ant-xxx"
+}
+```
+
+至少需要配置一个 LLM 供应商（OpenAI 或 Anthropic）。
+
+### 4. 初始化模型配置
+
+进入 OpenCode 会话，通过 preset 初始化：
+
+```bash
+/novel model init default
+```
+
+查看所有 agent 的模型分配：
+
+```bash
+/novel model list
+```
+
+### 快速开始
+
+```bash
+opencode
+```
+
+在 OpenCode 会话内运行：
+
+```
+/novel write --auto 仙帝重生
+```
+
+全自动模式将依次执行 6 个写作阶段，无需手动确认。
+
 ## Configuration
 
 Edit `.opencode/opencode-webnovel-forge.json` for agent model overrides.
