@@ -32,3 +32,8 @@ export {
 	WORKFLOW_LABELS,
 	SHUANG_LABELS,
 } from './types';
+
+export { WritingSession } from '../writer/session';
+export { callAgent } from '../writer/agent-runtime';
+export type { SessionConfig, SessionMode, SessionStatus, WritingSessionState } from '../writer/session';
+export type { AgentCallOptions, AgentResponse } from '../writer/agent-runtime';

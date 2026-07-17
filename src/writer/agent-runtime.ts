@@ -49,25 +49,8 @@ export async function callAgent(
     let systemPrompt = agentPrompt?.systemPrompt ?? '';
 
     if (options.masterStyle) {
-      const mastersDir = path.join(process.cwd(), 'prompts', 'masters');
-      // Scan masters dir to match by name or displayName
-      if (fs.existsSync(mastersDir)) {
-        const files = fs.readdirSync(mastersDir).filter(f => f.endsWith('.json'));
-        for (const file of files) {
-          try {
-            const raw = JSON.parse(fs.readFileSync(path.join(mastersDir, file), 'utf-8'));
-            if (raw.name === options.masterStyle || raw.displayName === options.masterStyle) {
-              let styleSection = '\n\n## 风格指令\n';
-              if (raw.styleGuide) styleSection += `【风格指南】${raw.styleGuide}\n`;
-              if (raw.characteristics?.length) styleSection += `【风格特征】${raw.characteristics.join('；')}\n`;
-              if (raw.strengths?.length) styleSection += `【优势】${raw.strengths.join('；')}\n`;
-              if (raw.weaknesses?.length) styleSection += `【注意事项】${raw.weaknesses.join('；')}\n`;
-              systemPrompt += styleSection;
-              break;
-            }
-          } catch { /* skip unparseable file */ }
-        }
-      }
+      const { injectStyle } = await import('./style/inject-style');
+      systemPrompt = injectStyle(systemPrompt, options.masterStyle);
     }
 
     if (options.systemPrompt) {

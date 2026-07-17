@@ -2,41 +2,92 @@
 
 import { callAgent } from '../agent-runtime';
 import type { StageInput, StageResult, StageRunner } from './types';
+import { reviewContent, saveQualityReport } from '../quality/quality-review';
+
+const WRITER_POOL = ['writer_a', 'writer_b', 'writer_c'];
 
 export const runFirstDraft: StageRunner = async (input) => {
-  const prompt = buildFirstDraftPrompt(input);
-  const response = await callAgent({
-    agentName: 'first_draft_writer',
-    userMessage: prompt,
-    masterStyle: input.masterStyle,
-  });
+  const writtenCount = input.context.recentChapters?.length || 0;
+  const chaptersToWrite = Math.max(0, input.context.totalChapters - writtenCount);
+
+  if (chaptersToWrite <= 1) {
+    const response = await callAgent({
+      agentName: 'first_draft_writer',
+      userMessage: buildChapterPrompt(input, writtenCount + 1),
+      masterStyle: input.masterStyle,
+    });
+    return {
+      output: response.content,
+      agentUsed: 'first_draft_writer',
+      tokensUsed: response.tokensUsed || 0,
+      stageName: 'first_draft',
+    };
+  }
+
+  const parallelCount = Math.min(3, chaptersToWrite);
+
+  // First batch: parallel writers from pool
+  const parallelResults = await Promise.all(
+    Array.from({ length: parallelCount }, (_, i) =>
+      callAgent({
+        agentName: WRITER_POOL[i],
+        userMessage: buildChapterPrompt(input, writtenCount + i + 1),
+        masterStyle: input.masterStyle,
+      })
+    )
+  );
+
+  // Remaining: single writer sequential
+  const remainingResults: { content: string; tokensUsed?: number }[] = [];
+  for (let i = parallelCount; i < chaptersToWrite; i++) {
+    const resp = await callAgent({
+      agentName: 'writer_a',
+      userMessage: buildChapterPrompt(input, writtenCount + i + 1),
+      masterStyle: input.masterStyle,
+    });
+    remainingResults.push(resp);
+  }
+
+  const allResults = [...parallelResults, ...remainingResults];
+  const agentsUsed = allResults.map((_, i) =>
+    i < parallelCount ? WRITER_POOL[i] : 'writer_a'
+  );
+
+  const combinedOutput = allResults.map((r, i) =>
+    `# Chapter ${writtenCount + i + 1}\n\n${r.content}\n`
+  ).join('\n---\n');
+
   return {
-    output: response.content,
-    agentUsed: 'first_draft_writer',
-    tokensUsed: response.tokensUsed || 0,
+    output: combinedOutput,
+    agentUsed: [...new Set(agentsUsed)].join(','),
+    tokensUsed: allResults.reduce((s, r) => s + (r.tokensUsed || 0), 0),
     stageName: 'first_draft',
   };
 };
 
-function buildFirstDraftPrompt(input: StageInput): string {
+function buildChapterPrompt(input: StageInput, chapterNum: number): string {
   const { context, masterStyle, userInstructions, previousOutput } = input;
   const meta = context.projectMeta;
   const styleIntro = masterStyle ? `Use writing style: ${masterStyle}.\n` : '';
   const instructions = userInstructions ? `User instructions: ${userInstructions}\n` : '';
   const prevContext = previousOutput ? `Previous output: ${previousOutput}\n` : '';
-  const recentChapters = input.context.recentChapters?.map(ch => `\n- Chapter ${ch.index}: ${ch.title}`).join('') || '';
-  const characters = input.context.characters?.map(c => `\n- ${c.name} (${c.role}): ${c.goal}`).join('') || '';
+  const recentChapters = context.recentChapters?.map(ch => `\n- Chapter ${ch.index}: ${ch.title}`).join('') || '';
+  const characters = context.characters?.map(c => `\n- ${c.name} (${c.role}): ${c.goal}`).join('') || '';
+  const plotArcs = context.plotArcs?.map(a => `\n- ${a.title}: ${a.summary}`).join('') || '';
+  const nextOutline = context.plotArcs?.[chapterNum - 1]?.summary || '';
 
-  return `Write the actual chapter content for "${meta.title}" based on the outline.
+  return `Write Chapter ${chapterNum} for "${meta.title}".
 
-${styleIntro}${instructions}${prevContext}Recent chapters: ${recentChapters}
+${styleIntro}${instructions}${prevContext}Previous chapters: ${recentChapters}
 Characters: ${characters}
+Plot arcs: ${plotArcs}
+${nextOutline ? `\nThis chapter summary: ${nextOutline}` : ''}
 
-This is the ${input.context.recentChapters?.length || 0 ? 'next chapter' : 'first chapter'} in the novel. Focus on:
+Focus on:
 - Narrative flow and pacing
 - Character dialogue and development
 - Scene descriptions and atmosphere
-- Plot progression according to outline
-
-Write engaging, genre-appropriate content. Ensure continuity with previous chapters and development consistent with the character profiles. Include all necessary action, dialogue, and internal monologue to maintain reader engagement.`;
+- Plot progression according to the arc summary
+${chapterNum <= 3 ? '- This is one of the opening chapters — establish tone and hook the reader' : '- Maintain consistency with established style and voice'}
+- Engaging, genre-appropriate content with proper structure`;
 }

@@ -64,10 +64,25 @@ test('outline stage calls correct agent', async () => {
   expect(result.stageName).toBe('outline');
 });
 
-test('first_draft stage calls correct agent', async () => {
+test('first_draft stage with single chapter uses first_draft_writer', async () => {
   mockCallAgent.mockResolvedValue(mockResponse);
-  const result = await runFirstDraft({ context: createMockContext() });
+  const ctx = createMockContext();
+  ctx.totalChapters = 1;
+  const result = await runFirstDraft({ context: ctx });
   expect(mockCallAgent).toHaveBeenCalledWith(expect.objectContaining({ agentName: 'first_draft_writer' }));
+  expect(result.stageName).toBe('first_draft');
+});
+
+test('first_draft with many chapters uses parallel writers', async () => {
+  mockCallAgent.mockResolvedValue(mockResponse);
+  const ctx = createMockContext();
+  ctx.totalChapters = 5;
+  const result = await runFirstDraft({ context: ctx });
+  // Should call 3 parallel agents + 1 sequential = 4 calls
+  expect(mockCallAgent).toHaveBeenCalledWith(expect.objectContaining({ agentName: 'writer_a' }));
+  expect(mockCallAgent).toHaveBeenCalledWith(expect.objectContaining({ agentName: 'writer_b' }));
+  expect(mockCallAgent).toHaveBeenCalledWith(expect.objectContaining({ agentName: 'writer_c' }));
+  expect(result.agentUsed).toContain('writer_a');
   expect(result.stageName).toBe('first_draft');
 });
 

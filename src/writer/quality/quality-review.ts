@@ -1,9 +1,24 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+
 export interface QualityReport {
+  id: string;
+  timestamp: string;
   overall: number;
   dimensions: QualityDimension[];
   criticalIssues: string[];
   suggestions: string[];
   passed: boolean;
+}
+
+export function saveQualityReport(report: QualityReport, projectsDir: string, projectName: string): string {
+  const reportsDir = path.join(projectsDir, projectName, 'quality-reports');
+  if (!fs.existsSync(reportsDir)) {
+    fs.mkdirSync(reportsDir, { recursive: true });
+  }
+  const filePath = path.join(reportsDir, `${report.id}.json`);
+  fs.writeFileSync(filePath, JSON.stringify(report, null, 2), 'utf-8');
+  return filePath;
 }
 
 export interface QualityDimension {
@@ -255,6 +270,8 @@ export function reviewContent(content: string, options: ReviewOptions = {}): Qua
   const passed = criticalIssues.length === 0 && overall >= 60;
   
   return {
+    id: `report-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    timestamp: new Date().toISOString(),
     overall: Math.round(overall),
     dimensions,
     criticalIssues,

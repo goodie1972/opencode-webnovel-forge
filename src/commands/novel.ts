@@ -11,7 +11,7 @@ import {
 	getAgentPromptMeta,
 	getUserMasterDir,
 } from '../prompts';
-import { NovelProjectManager, WorkflowStateMachine } from '../novel';
+import { NovelProjectManager, WorkflowStateMachine, WritingSession } from '../novel';
 
 const PACKAGE_ROOT = findPackageRoot();
 const PRESETS_DIR = path.join(PACKAGE_ROOT, 'presets');
@@ -169,6 +169,10 @@ export async function handleNovelCommand(
 		return handleActiveCommand(rawArgs.slice(1), directory);
 	}
 
+	if (subcommand === 'write') {
+		return handleWriteCommand(rawArgs.slice(1), directory);
+	}
+
 	const dir = directory ?? findPackageRoot();
 	const pm = new NovelProjectManager(dir);
 	const projects = pm.listProjects();
@@ -183,12 +187,14 @@ export async function handleNovelCommand(
 		'| `/novel master` | 查看/管理大神文风 |',
 		'| `/novel status` | 显示当前项目状态面板 |',
 		'| `/novel active` | 切换活动项目 |',
+		'| `/novel write` | 运行写作管线 (AI 生成) |',
 		'',
 		'子命令:',
 		'  `/novel model list` | `/novel model init <预设>` | `/novel model set <a> <m>`',
 		'  `/novel prompt list` | `/novel prompt path <agent>`',
 		'  `/novel master list` | `/novel master show <name>`',
 		'  `/novel status` | `/novel active <项目目录名>`',
+		'  `/novel write [--auto] [--continue] [--stage <s>] <项目>`',
 	];
 
 	if (projects.length > 0) {
@@ -200,6 +206,168 @@ export async function handleNovelCommand(
 	}
 
 	return lines.join('\n');
+}
+
+const STAGE_NAMES: Record<string, string> = {
+	'world-building': 'world_building',
+	'character-design': 'character_design',
+	'outline': 'outline',
+	'first-draft': 'first_draft',
+	'revision': 'revision',
+	'polish': 'polish',
+};
+
+async function handleWriteCommand(args: string[], directory?: string): Promise<string> {
+	const dir = directory ?? findPackageRoot();
+	const flags: { auto?: boolean; cont?: boolean; stage?: string; confirm?: boolean; abort?: boolean } = {};
+	const positional: string[] = [];
+
+	for (const a of args) {
+		if (a === '--auto') flags.auto = true;
+		else if (a === '--continue') flags.cont = true;
+		else if (a === '--confirm') flags.confirm = true;
+		else if (a === '--abort') flags.abort = true;
+		else if (a.startsWith('--stage=')) flags.stage = a.slice('--stage='.length);
+		else if (a === '--stage') { /* handled below */ }
+		else if (flags.stage === undefined && args[args.indexOf(a) - 1] === '--stage') flags.stage = a;
+		else positional.push(a);
+	}
+
+	const projectName = positional[0] || getActiveDir(dir);
+	if (!projectName) {
+		const pm = new NovelProjectManager(dir);
+		const projects = pm.listProjects();
+		if (projects.length === 0) return '📭 暂无小说项目。请先创建项目。';
+		return [
+			'📭 未指定项目。可用项目:',
+			...projects.map((p) => `  \`${p.dirName}\` — ${p.meta.title}`),
+			'',
+			'用法: `/novel write <项目名>`',
+		].join('\n');
+	}
+
+	if (flags.confirm) {
+		const session = await WritingSession.resume(dir, projectName);
+		if (!session) return `❌ 项目 \`${projectName}\` 无进行中的写作会话。`;
+		const status = session.getStatus();
+		if (status.isComplete) return `✅ 项目 \`${projectName}\` 的写作管线已完成。`;
+		if (status.mode === 'auto') return `⚠️ 当前为 auto 模式，无需确认。`;
+		await session.advanceStage();
+		await session.save();
+		const newStatus = session.getStatus();
+		return `✅ 已确认，管线前进至: **${newStatus.stageLabel}** (${Math.round(newStatus.progress * 100)}%)`;
+	}
+
+	if (flags.abort) {
+		const session = await WritingSession.resume(dir, projectName);
+		if (!session) return `❌ 项目 \`${projectName}\` 无进行中的写作会话。`;
+		const sessionPath = path.join(dir, 'novels', projectName, '.writing-session.json');
+		if (fs.existsSync(sessionPath)) fs.unlinkSync(sessionPath);
+		return `🛑 项目 \`${projectName}\` 的写作会话已中止并清除。`;
+	}
+
+	if (flags.cont) {
+		const session = await WritingSession.resume(dir, projectName);
+		if (!session) return `❌ 项目 \`${projectName}\` 无保存的会话可供继续。`;
+		const status = session.getStatus();
+		if (status.isComplete) return `✅ 项目 \`${projectName}\` 的写作管线已完成。`;
+
+		if (flags.stage) {
+			const mapped = STAGE_NAMES[flags.stage] || flags.stage;
+			// Override current stage and run it
+			try {
+				const result = await session.runCurrentStage();
+				return [
+					`✅ **${status.stageLabel}** 阶段完成`,
+					`  - Agent: \`${result.agentUsed}\``,
+					`  - Tokens: ${result.tokensUsed ?? 'N/A'}`,
+					`  - 输出长度: ${result.output.length} 字符`,
+				].join('\n');
+			} catch (e) {
+				return `❌ 写作阶段失败: ${e instanceof Error ? e.message : String(e)}`;
+			}
+		}
+
+		if (flags.auto) {
+			try {
+				const { results, status: finalStatus } = await session.runFullPipeline();
+				const totalTokens = results.reduce((s, r) => s + (r.tokensUsed ?? 0), 0);
+				return [
+					`✅ **${projectName}** 全自动写作管线完成`,
+					`  - 完成阶段: ${results.length} 个`,
+					`  - 总 Tokens: ${totalTokens}`,
+					`  - 最终状态: ${finalStatus.stageLabel} (${Math.round(finalStatus.progress * 100)}%)`,
+				].join('\n');
+			} catch (e) {
+				return `❌ 写作管线失败: ${e instanceof Error ? e.message : String(e)}`;
+			}
+		}
+
+		// Semi-auto continue: run one stage
+		try {
+			const result = await session.runCurrentStage();
+			const curStatus = session.getStatus();
+			return [
+				`✅ 阶段 **${curStatus.stageLabel}** 完成`,
+				`  - Agent: \`${result.agentUsed}\``,
+				`  - Tokens: ${result.tokensUsed ?? 'N/A'}`,
+				`  - 输出: ${result.output.slice(0, 200)}${result.output.length > 200 ? '...' : ''}`,
+				'',
+				`📋 **下一阶段**: ${curStatus.isComplete ? '已完成' : `${curStatus.stageLabel} — 运行 \`/novel write --confirm ${projectName}\` 确认进入下一阶段`}`,
+			].join('\n');
+		} catch (e) {
+			return `❌ 写作阶段失败: ${e instanceof Error ? e.message : String(e)}`;
+		}
+	}
+
+	// New session
+	try {
+		const config: Partial<import('../writer/session').SessionConfig> = {
+			mode: flags.auto ? 'auto' : 'semi-auto',
+		};
+		const session = await WritingSession.create(dir, projectName, config);
+		const status = session.getStatus();
+
+		if (flags.stage) {
+			// Run specific stage only
+			const result = await session.runCurrentStage();
+			return [
+				`✅ 阶段 **${status.stageLabel}** 完成`,
+				`  - Agent: \`${result.agentUsed}\``,
+				`  - Tokens: ${result.tokensUsed ?? 'N/A'}`,
+				`  - 输出: ${result.output.slice(0, 200)}${result.output.length > 200 ? '...' : ''}`,
+			].join('\n');
+		}
+
+		if (flags.auto) {
+			try {
+				const { results, status: finalStatus } = await session.runFullPipeline();
+				const totalTokens = results.reduce((s, r) => s + (r.tokensUsed ?? 0), 0);
+				return [
+					`✅ **${projectName}** 全自动写作管线完成`,
+					`  - 完成阶段: ${results.length} 个`,
+					`  - 总 Tokens: ${totalTokens}`,
+					`  - 最终状态: ${finalStatus.stageLabel} (${Math.round(finalStatus.progress * 100)}%)`,
+				].join('\n');
+			} catch (e) {
+				return `❌ 写作管线失败: ${e instanceof Error ? e.message : String(e)}`;
+			}
+		}
+
+		// Semi-auto: run first stage
+		const result = await session.runCurrentStage();
+		return [
+			`🚀 写作会话已创建: **${projectName}** (${flags.auto ? 'auto' : 'semi-auto'})`,
+			`  - 当前阶段: **${status.stageLabel}**`,
+			`  - Agent: \`${result.agentUsed}\``,
+			`  - Tokens: ${result.tokensUsed ?? 'N/A'}`,
+			`  - 输出: ${result.output.slice(0, 200)}${result.output.length > 200 ? '...' : ''}`,
+			'',
+			`📋 **下一阶段**: 运行 \`/novel write --confirm ${projectName}\` 确认进入下一阶段`,
+		].join('\n');
+	} catch (e) {
+		return `❌ 创建写作会话失败: ${e instanceof Error ? e.message : String(e)}`;
+	}
 }
 
 const ACTIVE_PROJECT_FILE = '.novel-active';

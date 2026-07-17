@@ -575,6 +575,46 @@ describe('E2E: 6阶段工作流 — WorkflowStateMachine', () => {
 	});
 });
 
+describe('E2E: /novel write 写作管线', () => {
+	let pm: NovelProjectManager;
+	let dirName = '';
+
+	beforeAll(() => {
+		pm = new NovelProjectManager(testDir);
+		dirName = pm.create({ title: '写作管线测试', author: '测试', genre: '玄幻', targetWords: 50000 }).dirName;
+	});
+
+	it('/novel — help 包含 write', async () => {
+		const output = await novel();
+		expect(output).toContain('/novel write');
+		console.log('  ✓ 帮助信息包含 write 命令');
+	});
+
+	it('WritingSession.create 创建会话文件', async () => {
+		const { WritingSession } = await import('../../src/writer/session');
+		const ws = await WritingSession.create(testDir, dirName, { mode: 'semi-auto' });
+		expect(ws).toBeDefined();
+		expect(ws.projectDir).toBe(dirName);
+		const sessionPath = path.join(testDir, 'novels', dirName, '.writing-session.json');
+		expect(fs.existsSync(sessionPath)).toBe(true);
+		console.log('  ✓ 写作会话文件已创建');
+	});
+
+	it('/novel write --abort 清除会话文件', async () => {
+		const output = await novel('write', '--abort', dirName);
+		expect(output).toContain('已中止');
+		const sessionPath = path.join(testDir, 'novels', dirName, '.writing-session.json');
+		expect(fs.existsSync(sessionPath)).toBe(false);
+		console.log('  ✓ 会话文件已清除');
+	});
+
+	it('/novel write --confirm 提示无会话', async () => {
+		const output = await novel('write', '--confirm', dirName);
+		expect(output).toContain('无进行中的写作会话');
+		console.log('  ✓ 无会话时正确提示');
+	});
+});
+
 describe('E2E: 清理 — 删除项目', () => {
 	let pm: NovelProjectManager;
 
