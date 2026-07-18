@@ -33,25 +33,42 @@ export function saveDynamicState(projectsDir: string, projectDir: string, state:
   fs.writeFileSync(filePath, JSON.stringify(state, null, 2), 'utf-8');
 }
 
-export function updateAfterChapter(state: DynamicState, card: ChapterControlCard): DynamicState {
+export function updateAfterChapter(
+  state: DynamicState,
+  card: ChapterControlCard,
+  characterNames?: string[],
+): DynamicState {
   const updated = { ...state };
   updated.lastChapterIndex = card.chapterIndex;
   updated.chaptersWritten += 1;
 
   // Update character states based on control card changes
   for (const change of card.characterStateChanges || []) {
-    const match = change.match(/^(\w+):\s*(.+)$/);
-    if (match) {
-      const [_, charName, status] = match;
-      if (!updated.characterStates[charName]) {
-        updated.characterStates[charName] = {
-          lastAppearance: card.chapterIndex,
-          status: 'active',
-          relationshipChanges: [],
-        };
+    const charName = change.characterId;
+    const status = change.status || 'active';
+    
+    if (!charName) continue;
+    if (!updated.characterStates[charName]) {
+      updated.characterStates[charName] = {
+        lastAppearance: card.chapterIndex,
+        status: 'active',
+        relationshipChanges: [],
+      };
+    }
+    const cs = updated.characterStates[charName];
+    cs.lastAppearance = card.chapterIndex;
+    cs.status = status;
+
+    // Apply relationship changes
+    if (change.relationshipChanges) {
+      for (const rc of change.relationshipChanges) {
+        cs.relationshipChanges.push({
+          chapter: card.chapterIndex,
+          target: rc.targetName,
+          delta: rc.delta,
+          description: rc.description,
+        });
       }
-      updated.characterStates[charName].lastAppearance = card.chapterIndex;
-      updated.characterStates[charName].status = status;
     }
   }
 
@@ -59,6 +76,16 @@ export function updateAfterChapter(state: DynamicState, card: ChapterControlCard
   for (const debt of card.debtsToReturn) {
     if (!updated.emotionalDebts.includes(debt)) {
       updated.emotionalDebts.push(debt);
+    }
+  }
+
+  // Auto-detect character appearances from AgentContext character list
+  // Only updates existing characters — new characters require explicit characterStateChanges
+  if (characterNames) {
+    for (const name of characterNames) {
+      if (updated.characterStates[name]) {
+        updated.characterStates[name].lastAppearance = card.chapterIndex;
+      }
     }
   }
 

@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test';
 
-import type { ChapterControlCard, DynamicState, ForgottenCheckResult } from '../../../../src/writer/control/types';
+import type { ChapterControlCard, CharacterStateChange, DynamicState, ForgottenCheckResult } from '../../../../src/writer/control/types';
 
 test('ChapterControlCard has required fields', () => {
   const card: ChapterControlCard = {
@@ -11,11 +11,27 @@ test('ChapterControlCard has required fields', () => {
     debtsToReturn: ['foreshadow-1'],
     conflict: 'protagonist vs antagonist',
     endingResidue: 'cliffhanger',
-    characterStateChanges: ['protagonist determined'],
+    characterStateChanges: [{ characterId: 'protagonist', status: 'determined' }],
   };
   expect(card.chapterIndex).toBe(1);
   expect(card.mission).toBeTruthy();
   expect(card.linesToAdvance.length).toBeGreaterThan(0);
+});
+
+test('CharacterStateChange supports enriched fields', () => {
+  const change: CharacterStateChange = {
+    characterId: 'hero',
+    status: 'active',
+    emotionalState: '愤怒',
+    relationshipChanges: [
+      { targetName: 'villain', delta: -10, description: '冲突升级' },
+    ],
+    development: '成长弧 — 开始面对内心阴影',
+  };
+  expect(change.characterId).toBe('hero');
+  expect(change.emotionalState).toBe('愤怒');
+  expect(change.relationshipChanges).toHaveLength(1);
+  expect(change.development).toBeTruthy();
 });
 
 test('DynamicState has all required sections', () => {

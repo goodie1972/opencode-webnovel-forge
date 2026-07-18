@@ -66,3 +66,37 @@ test('listControlCards returns sorted cards', () => {
   const cards = listControlCards(pm.projectsDir, dirName);
   expect(Array.isArray(cards)).toBe(true);
 });
+
+test('generateControlCard emits enriched CharacterStateChange when context has characters', () => {
+  const context = {
+    characters: [
+      { name: '林风', role: 'protagonist', arc: '成长弧 — 从懦弱到坚强', voice: '沉稳', goal: '复仇' },
+      { name: '暗影', role: 'antagonist', arc: '堕落', voice: '阴冷', goal: '统治' },
+    ],
+  };
+  const state: DynamicState = {
+    lastChapterIndex: 0,
+    characterStates: {
+      '林风': { lastAppearance: 5, status: 'active', relationshipChanges: [] },
+    },
+    plotlineProgress: {},
+    foreshadowingStatus: {},
+    emotionalDebts: [],
+    pendingConfirmations: [],
+    chaptersWritten: 5,
+  };
+
+  const card = generateControlCard(6, '第六章', context, state);
+
+  expect(card.characterStateChanges).toHaveLength(2);
+
+  const linFeng = card.characterStateChanges.find(c => c.characterId === '林风')!;
+  expect(linFeng).toBeDefined();
+  expect(linFeng.status).toBe('active');
+  expect(linFeng.emotionalState).toBeTruthy();
+  expect(linFeng.development).toContain('成长弧');
+
+  const shadow = card.characterStateChanges.find(c => c.characterId === '暗影')!;
+  expect(shadow).toBeDefined();
+  expect(shadow.emotionalState).toBe('冷静但有威胁');
+});

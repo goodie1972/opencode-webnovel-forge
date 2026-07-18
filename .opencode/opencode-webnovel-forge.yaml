@@ -1,0 +1,51 @@
+# ============================================================
+# Plan C — 全球免费模型 (opencode-zen / agnes / sensenova)
+# 使用方法: 复制此文件到 .opencode/opencode-webnovel-forge.yaml
+#           然后编辑 agent 的 model/temperature
+# ============================================================
+language: zh
+qa_retry_limit: 3
+
+agents:
+  editor_in_chief:
+    model: opencode-zen/deepseek-v4-flash-free
+    temperature: 0.1
+  research_market:
+    model: agnes/agnes-1.5-flash
+    temperature: 0.2
+  research_deep:
+    model: opencode-zen/nemotron-3-ultra-free
+    temperature: 0.2
+  writer_a:
+    model: agnes/agnes-2.0-flash
+    temperature: 0.2
+  writer_b:
+    model: agnes/agnes-2.0-flash
+    temperature: 0.5
+  writer_c:
+    model: agnes/agnes-2.0-flash
+    temperature: 0.8
+  world_builder:
+    model: opencode-zen/deepseek-v4-flash-free
+    temperature: 0.3
+  character_designer:
+    model: opencode-zen/deepseek-v4-flash-free
+    temperature: 0.4
+  plot_architect:
+    model: opencode-zen/nemotron-3-ultra-free
+    temperature: 0.3
+  shuang_analyzer:
+    model: opencode-zen/mimo-v2.5-free
+    temperature: 0.2
+  pacing_reviewer:
+    model: opencode-zen/mimo-v2.5-free
+    temperature: 0.2
+  genre_checker:
+    model: opencode-zen/deepseek-v4-flash-free
+    temperature: 0.1
+  reader_simulator:
+    model: opencode-zen/deepseek-v4-flash-free
+    temperature: 0.4
+  copy_editor:
+    model: sensenova/sensenova-6.7-flash-lite
+    temperature: 0.1

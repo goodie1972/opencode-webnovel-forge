@@ -1,5 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import type { ForgottenCheckResult } from '../control/types';
 
 export interface QualityReport {
   id: string;
@@ -34,6 +35,7 @@ export interface ReviewOptions {
   requireDialogue?: boolean;
   checkClichés?: boolean;
   checkRepeatWords?: boolean;
+  forgottenResult?: ForgottenCheckResult;
 }
 
 export const DEFAULT_REVIEW_OPTIONS: ReviewOptions = {
@@ -263,6 +265,34 @@ export function reviewContent(content: string, options: ReviewOptions = {}): Qua
     if (repeatWordsDim.score < 40) {
       criticalIssues.push(`Excessive word repetition (score: ${repeatWordsDim.score})`);
       suggestions.push('Vary vocabulary to eliminate word repetition');
+    }
+  }
+  
+  // Forgotten dimension — tracks narrative debt from control system
+  if (opts.forgottenResult) {
+    const fr = opts.forgottenResult;
+    const issues: string[] = [];
+    if (fr.overdueCharacters.length > 0) {
+      issues.push(`Overdue characters: ${fr.overdueCharacters.join(', ')}`);
+    }
+    if (fr.coldPlotlines.length > 0) {
+      issues.push(`Cold plotlines: ${fr.coldPlotlines.join(', ')}`);
+    }
+    if (fr.unreturnedDebts.length > 0) {
+      issues.push(`Unreturned debts: ${fr.unreturnedDebts.join(', ')}`);
+    }
+    if (fr.foreshadowingExpiring.length > 0) {
+      issues.push(`Expiring foreshadowing: ${fr.foreshadowingExpiring.join(', ')}`);
+    }
+    dimensions.push({
+      name: 'forgotten',
+      score: fr.overallScore,
+      issues,
+      details: `overallScore=${fr.overallScore}, overdue=${fr.overdueCharacters.length}, cold=${fr.coldPlotlines.length}, debts=${fr.unreturnedDebts.length}, foreshadow=${fr.foreshadowingExpiring.length}`,
+    });
+    if (fr.overallScore < 40) {
+      criticalIssues.push(`Narrative continuity at risk (score: ${fr.overallScore})`);
+      suggestions.push('Address overdue characters and cold plotlines in upcoming chapters');
     }
   }
   

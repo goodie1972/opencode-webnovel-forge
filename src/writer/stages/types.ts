@@ -17,6 +17,8 @@ export interface StageResult {
   agentUsed: string;
   tokensUsed: number;
   stageName: string;
+  qualityScore?: number;
+  forgottenWarnings?: string[];
 }
 
 export type StageRunner = (input: StageInput) => Promise<StageResult>;

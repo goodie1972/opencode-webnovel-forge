@@ -1,3 +1,11 @@
+export interface CharacterStateChange {
+  characterId: string;
+  status: string;
+  emotionalState?: string;
+  relationshipChanges?: { targetName: string; delta: number; description: string }[];
+  development?: string;
+}
+
 export interface ChapterControlCard {
   chapterIndex: number;
   title: string;
@@ -6,7 +14,7 @@ export interface ChapterControlCard {
   debtsToReturn: string[];
   conflict: string;
   endingResidue: string;
-  characterStateChanges: { characterId: string; status: string }[];
+  characterStateChanges: CharacterStateChange[];
 }
 
 export interface DynamicState {

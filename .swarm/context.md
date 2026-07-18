@@ -40,17 +40,17 @@ Swarm: local
 
 | Tool | Calls | Success | Failed | Avg Duration |
 |------|-------|---------|--------|--------------|
-| bash | 546 | 546 | 0 | 6792ms |
-| read | 483 | 483 | 0 | 19221ms |
-| edit | 270 | 270 | 0 | 1702ms |
-| write | 186 | 186 | 0 | 1804ms |
-| grep | 60 | 60 | 0 | 1395ms |
-| glob | 47 | 47 | 0 | 521ms |
-| todowrite | 37 | 37 | 0 | 23ms |
-| task | 20 | 20 | 0 | 428846ms |
+| bash | 582 | 582 | 0 | 6671ms |
+| read | 542 | 542 | 0 | 17152ms |
+| edit | 300 | 300 | 0 | 1633ms |
+| write | 191 | 191 | 0 | 1772ms |
+| glob | 65 | 65 | 0 | 417ms |
+| grep | 64 | 64 | 0 | 1323ms |
+| todowrite | 41 | 41 | 0 | 22ms |
+| task | 21 | 21 | 0 | 420754ms |
 | update_task_status | 15 | 15 | 0 | 211ms |
 | gitingest | 12 | 12 | 0 | 10646ms |
-| skill | 9 | 9 | 0 | 160ms |
+| skill | 10 | 10 | 0 | 228ms |
 | save_plan | 8 | 8 | 0 | 210ms |
 | search | 7 | 7 | 0 | 127ms |
 | phase_complete | 6 | 6 | 0 | 17475ms |
@@ -59,11 +59,12 @@ Swarm: local
 | fetch_get_markdown | 5 | 5 | 0 | 130ms |
 | question | 4 | 4 | 0 | 72666ms |
 | check_gate_status | 3 | 3 | 0 | 27ms |
+| invalid | 2 | 2 | 0 | 4ms |
 | set_qa_gates | 2 | 2 | 0 | 72ms |
 | dispatch_lanes | 2 | 2 | 0 | 84064ms |
 | sequential-thinking_sequentialthinking | 2 | 2 | 0 | 59ms |
+| batch_symbols | 2 | 2 | 0 | 31ms |
 | websearch | 2 | 2 | 0 | 3082ms |
-| invalid | 1 | 1 | 0 | 2ms |
 | spec_write | 1 | 1 | 0 | 45ms |
 | declare_scope | 1 | 1 | 0 | 8ms |
 | summarize_work | 1 | 1 | 0 | 76ms |
@@ -71,5 +72,4 @@ Swarm: local
 | write_drift_evidence | 1 | 1 | 0 | 141ms |
 | checkpoint | 1 | 1 | 0 | 573ms |
 | web_fetch | 1 | 1 | 0 | 12ms |
-| batch_symbols | 1 | 1 | 0 | 55ms |
 | webfetch | 1 | 1 | 0 | 9754ms |

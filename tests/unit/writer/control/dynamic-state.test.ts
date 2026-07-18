@@ -65,7 +65,7 @@ test('updateAfterChapter increments chaptersWritten and updates character states
     debtsToReturn: [],
     conflict: '主角 vs 反派',
     endingResidue: '悬念',
-    characterStateChanges: ['hero: determined'],
+    characterStateChanges: [{ characterId: 'hero', status: 'determined' }],
   };
   
   const updated = updateAfterChapter(state, card);
@@ -114,4 +114,102 @@ test('updateAfterChapter does not duplicate debts', () => {
   const updated = updateAfterChapter(state, card);
   expect(updated.emotionalDebts.filter(d => d === 'existing-debt').length).toBe(1);
   expect(updated.emotionalDebts).toContain('new-debt');
+});
+
+test('updateAfterChapter applies enriched CharacterStateChange with relationshipChanges', () => {
+  const state = createEmptyState();
+
+  const card: ChapterControlCard = {
+    chapterIndex: 3,
+    title: '第三章',
+    mission: '激化矛盾',
+    linesToAdvance: ['main'],
+    debtsToReturn: [],
+    conflict: '正面对抗',
+    endingResidue: '新的悬念',
+    characterStateChanges: [
+      {
+        characterId: 'hero',
+        status: 'active',
+        emotionalState: '愤怒',
+        relationshipChanges: [
+          { targetName: 'villain', delta: -15, description: '正面冲突后关系恶化' },
+        ],
+        development: '成长弧 — 直面恐惧',
+      },
+      {
+        characterId: 'villain',
+        status: 'active',
+        emotionalState: '冷静但有威胁',
+      },
+    ],
+  };
+
+  const updated = updateAfterChapter(state, card);
+
+  expect(updated.characterStates.hero.lastAppearance).toBe(3);
+  expect(updated.characterStates.hero.status).toBe('active');
+  expect(updated.characterStates.hero.relationshipChanges.length).toBe(1);
+  expect(updated.characterStates.hero.relationshipChanges[0]).toMatchObject({
+    chapter: 3,
+    target: 'villain',
+    delta: -15,
+  });
+
+  expect(updated.characterStates.villain.lastAppearance).toBe(3);
+  expect(updated.characterStates.villain.status).toBe('active');
+});
+
+test('updateAfterChapter auto-updates lastAppearance for known characters from characterNames', () => {
+  const state = createEmptyState();
+  state.characterStates = {
+    hero: { lastAppearance: 1, status: 'active', relationshipChanges: [] },
+    sage: { lastAppearance: 1, status: 'active', relationshipChanges: [] },
+    villain: { lastAppearance: 2, status: 'active', relationshipChanges: [] },
+  };
+
+  const card: ChapterControlCard = {
+    chapterIndex: 3,
+    title: '第三章',
+    mission: '任务',
+    linesToAdvance: [],
+    debtsToReturn: [],
+    conflict: '',
+    endingResidue: '',
+    characterStateChanges: [{ characterId: 'hero', status: 'active' }],
+  };
+
+  const updated = updateAfterChapter(state, card, ['hero', 'sage']);
+
+  // hero appears in both characterStateChanges and characterNames
+  expect(updated.characterStates.hero.lastAppearance).toBe(3);
+  // sage is auto-updated from characterNames
+  expect(updated.characterStates.sage.lastAppearance).toBe(3);
+  // villain is not in characterNames, unchanged
+  expect(updated.characterStates.villain.lastAppearance).toBe(2);
+});
+
+test('updateAfterChapter does not auto-add unknown characters from characterNames', () => {
+  const state = createEmptyState();
+  state.characterStates = {
+    hero: { lastAppearance: 1, status: 'active', relationshipChanges: [] },
+  };
+
+  const card: ChapterControlCard = {
+    chapterIndex: 2,
+    title: '第二章',
+    mission: '任务',
+    linesToAdvance: [],
+    debtsToReturn: [],
+    conflict: '',
+    endingResidue: '',
+    characterStateChanges: [],
+  };
+
+  const updated = updateAfterChapter(state, card, ['new_character']);
+
+  // new_character should not be auto-added
+  expect(updated.characterStates['new_character']).toBeUndefined();
+  // hero unchanged
+  expect(updated.characterStates.hero.lastAppearance).toBe(1);
 });

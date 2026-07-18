@@ -1,5 +1,6 @@
 import { reviewContent } from './quality-review';
 import type { QualityReport, ReviewOptions } from './quality-review';
+import type { ForgottenCheckResult } from '../control/types';
 export { reviewContent };
 
 export interface RevisionConfig {
@@ -26,8 +27,9 @@ export async function reviseContent(
   content: string,
   callAgentFn: (prompt: string) => Promise<string>,
   config: Partial<RevisionConfig> = {},
+  forgottenResult?: ForgottenCheckResult,
 ): Promise<RevisionResult> {
-  const options: ReviewOptions = {};
+  const options: ReviewOptions = { forgottenResult };
   const revisionConfig = { ...DEFAULT_REVISION_CONFIG, ...config };
   
   const iterationReports: QualityReport[] = [];

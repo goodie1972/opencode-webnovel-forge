@@ -12,9 +12,22 @@ import {
 	getUserMasterDir,
 } from '../prompts';
 import { NovelProjectManager, WorkflowStateMachine, WritingSession } from '../novel';
+import type { StageResult } from '../writer/stages/types';
 
 const PACKAGE_ROOT = findPackageRoot();
 const PRESETS_DIR = path.join(PACKAGE_ROOT, 'presets');
+
+function formatStageResult(lines: string[], result: StageResult): string[] {
+  if (result.qualityScore !== undefined) {
+    lines.push(`  - 质量评分: ${result.qualityScore}/100`);
+  }
+  if (result.forgottenWarnings && result.forgottenWarnings.length > 0) {
+    for (const w of result.forgottenWarnings) {
+      lines.push(`  - ⚠️ ${w}`);
+    }
+  }
+  return lines;
+}
 
 function findPackageRoot(): string {
 	let dir = path.dirname(new URL(import.meta.url).pathname);
@@ -277,12 +290,12 @@ async function handleWriteCommand(args: string[], directory?: string): Promise<s
 			// Override current stage and run it
 			try {
 				const result = await session.runCurrentStage();
-				return [
+				return formatStageResult([
 					`✅ **${status.stageLabel}** 阶段完成`,
 					`  - Agent: \`${result.agentUsed}\``,
 					`  - Tokens: ${result.tokensUsed ?? 'N/A'}`,
 					`  - 输出长度: ${result.output.length} 字符`,
-				].join('\n');
+				], result).join('\n');
 			} catch (e) {
 				return `❌ 写作阶段失败: ${e instanceof Error ? e.message : String(e)}`;
 			}
@@ -307,14 +320,14 @@ async function handleWriteCommand(args: string[], directory?: string): Promise<s
 		try {
 			const result = await session.runCurrentStage();
 			const curStatus = session.getStatus();
-			return [
+			return formatStageResult([
 				`✅ 阶段 **${curStatus.stageLabel}** 完成`,
 				`  - Agent: \`${result.agentUsed}\``,
 				`  - Tokens: ${result.tokensUsed ?? 'N/A'}`,
 				`  - 输出: ${result.output.slice(0, 200)}${result.output.length > 200 ? '...' : ''}`,
 				'',
 				`📋 **下一阶段**: ${curStatus.isComplete ? '已完成' : `${curStatus.stageLabel} — 运行 \`/novel write --confirm ${projectName}\` 确认进入下一阶段`}`,
-			].join('\n');
+			], result).join('\n');
 		} catch (e) {
 			return `❌ 写作阶段失败: ${e instanceof Error ? e.message : String(e)}`;
 		}
@@ -331,12 +344,12 @@ async function handleWriteCommand(args: string[], directory?: string): Promise<s
 		if (flags.stage) {
 			// Run specific stage only
 			const result = await session.runCurrentStage();
-			return [
+			return formatStageResult([
 				`✅ 阶段 **${status.stageLabel}** 完成`,
 				`  - Agent: \`${result.agentUsed}\``,
 				`  - Tokens: ${result.tokensUsed ?? 'N/A'}`,
 				`  - 输出: ${result.output.slice(0, 200)}${result.output.length > 200 ? '...' : ''}`,
-			].join('\n');
+			], result).join('\n');
 		}
 
 		if (flags.auto) {
@@ -356,7 +369,7 @@ async function handleWriteCommand(args: string[], directory?: string): Promise<s
 
 		// Semi-auto: run first stage
 		const result = await session.runCurrentStage();
-		return [
+		return formatStageResult([
 			`🚀 写作会话已创建: **${projectName}** (${flags.auto ? 'auto' : 'semi-auto'})`,
 			`  - 当前阶段: **${status.stageLabel}**`,
 			`  - Agent: \`${result.agentUsed}\``,
@@ -364,7 +377,7 @@ async function handleWriteCommand(args: string[], directory?: string): Promise<s
 			`  - 输出: ${result.output.slice(0, 200)}${result.output.length > 200 ? '...' : ''}`,
 			'',
 			`📋 **下一阶段**: 运行 \`/novel write --confirm ${projectName}\` 确认进入下一阶段`,
-		].join('\n');
+		], result).join('\n');
 	} catch (e) {
 		return `❌ 创建写作会话失败: ${e instanceof Error ? e.message : String(e)}`;
 	}

@@ -15,6 +15,7 @@ import { reviewContent, saveQualityReport } from './quality/quality-review';
 import { injectStyle } from './style/inject-style';
 import { generateControlCard, saveControlCard } from './control/control-card';
 import { createEmptyState, loadDynamicState, saveDynamicState, updateAfterChapter } from './control/dynamic-state';
+import { forgottenCheck } from './control/forgotten-check';
 import type { DynamicState } from './control/types';
 
 export type SessionMode = 'auto' | 'semi-auto';
@@ -153,16 +154,36 @@ export class WritingSession {
       stageName: baseResult.stageName,
     };
 
-    // Run quality review and save report
-    const qualityReport = reviewContent(styledOutput);
+    // Run forgotten check before updating state
+    const forgotten = forgottenCheck(dynamicState, controlCard.chapterIndex);
+
+    // Run quality review with forgotten dimension
+    const qualityReport = reviewContent(styledOutput, { forgottenResult: forgotten });
     try {
       saveQualityReport(qualityReport, this.pm.projectsDir, this.projectDir);
     } catch {
       // Best-effort: don't fail the stage if report saving fails
     }
 
+    // Attach quality feedback to result
+    styledResult.qualityScore = qualityReport.overall;
+    const forgottenWarnings: string[] = [];
+    if (forgotten.overdueCharacters.length > 0) {
+      forgottenWarnings.push(`角色 ${forgotten.overdueCharacters.join('、')} 已 ${forgotten.overdueCharacters.length} 章未出场`);
+    }
+    if (forgotten.coldPlotlines.length > 0) {
+      forgottenWarnings.push(`剧情线 ${forgotten.coldPlotlines.join('、')} 已 ${forgotten.coldPlotlines.length} 章未推进`);
+    }
+    if (forgotten.unreturnedDebts.length > 0) {
+      forgottenWarnings.push(`情感债务未偿还: ${forgotten.unreturnedDebts.join('、')}`);
+    }
+    if (forgotten.foreshadowingExpiring.length > 0) {
+      forgottenWarnings.push(`伏笔即将过期: ${forgotten.foreshadowingExpiring.join('、')}`);
+    }
+    styledResult.forgottenWarnings = forgottenWarnings;
+
     // Update dynamic state after chapter written
-    const updatedState = updateAfterChapter(dynamicState, controlCard);
+    const updatedState = updateAfterChapter(dynamicState, controlCard, agentContext.characters.map(c => c.name));
     saveDynamicState(this.pm.projectsDir, this.projectDir, updatedState);
 
     // Save to workflow stageData - store the full result, not just output
