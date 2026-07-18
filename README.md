@@ -246,6 +246,35 @@ opencode
 
 全自动模式将依次执行 6 个写作阶段，无需手动确认。
 
+### 运行完整中篇测试
+
+```bash
+# 1. 前置验证
+bun test tests/unit/writer/control/ tests/unit/writer/quality/ tests/simulation/
+
+# 2. (可选) 运行 setup 脚本查看配置
+bun run scripts/setup-test.ts
+
+# 3. 启动 OpenCode，运行全自动管线
+opencode
+/novel write --auto 星穹之巅
+```
+
+预期产出：100,000 ~ 200,000 字的中篇小说，含 6 个写作阶段、6 份质量审查报告、NCS 遗忘检测。
+
+### 模型预设
+
+系统提供 4 种预设配置（`presets/*.yaml`）：
+
+| 预设 | 说明 | 使用 |
+|------|------|------|
+| `default` | 国际付费模型 (Claude/GPT/Gemini) | `/novel model init default` |
+| `plan-a` | 国际付费模型 (同 default) | `/novel model init plan-a` |
+| `plan-b` | 国内付费模型 (通义千问/GLM/Kimi) | `/novel model init plan-b` |
+| `plan-c` | 全球免费模型 (推荐测试用) | `/novel model init plan-c` |
+
+当前测试配置: `plan-c` (全球免费模型，已复制到 `.opencode/opencode-webnovel-forge.yaml`)
+
 ## Configuration
 
 Edit `.opencode/opencode-webnovel-forge.json` for agent model overrides.
